@@ -108,51 +108,59 @@
   <div id="statistiek"></div>
 
   <script>
-// Woordlys bly dieselfde
-const woordLys = [
-"awery", "awend", "avorm", "attar", "atoom", "atome", "atlas", "atjie", "aande", "aanhe", "aanhu", "aanja", "aanle", "aanry", "aanse", "aarde", "aards", "abdis", "abdye", "abeba", "abeel", "ablou", "abrup", "abses", "absis", "abuis",
-"adams", "adder", "adieu", "adres", "adret", "afarm", "afbas", "afbel", "afbid", "afbie", "afbou", "afbyt", "afdae", "afdag", "afdak", "afdam", "afdek", "afdig", "afdop", "afdra", "afdun", "afeet", "afend", "afent", "afets", "affek", "afgee", "afgly", "afgod", "afhak", "afhap", "afheg", "afhel", "afhok", "afhol", "afhou", "afhys", "afjak", "afkam", "afkap", "afkom", "afkop", "afkou", "afkry", "afkyk", "aflei", "aflek", "aflig", "aflos", "aflui", "aflyn", "afmat", "afoes", "afoor", "afpak", "afpas", "afpel", "afpen", "afpik", "afpyl", "afrem", "afrig", "afrit", "afrol", "afros", "afruk", "afsak", "afset", "afsit", "afsku", "afsny", "aftak", "aftap", "aftas", "aftel", "aftik", "aftob", "aftog", "aftop", "afval", "afvat", "afvee", "afvra", "afvry", "afvyl", "afwag", "afwas", "afwei", "afwen", "afwin", "afwip", "afwis", "afwit", "afwyk", "afwys",
-"agaam", "agaat", "agarm", "agate", "agave", "ageer", "agens", "aggie", "agste", "agtal", "agter", "aguur", "ahooi", "ahorn", "aiais", "aires", "aitsa", "ajoos", "akant", "akker", "akkie", "aknee", "aksep", "akses", "aksie", "aktes",
-"aland", "alant", "alarm", "albas", "albei", "album", "aldae", "aldag", "aldan", "aldra", "aldus", "aleer", "algar", "algoa", "alias", "alibi", "alice", "alida", "alkyn", "allee", "aller", "alles", "allig", "almag", "almal", "alnag",
-"aloue", "alras", "alsem", "alton", "altyd", "aluin", "alwys", "amaas", "amara", "ambag", "amber", "amebe", "amens", "amice", "amien", "amine", "amman", "amorf", "ampas", "ampel", "amper", "ampie", "ampre", "ampte", "ampul", "anaal", 
-"anale", "ander", "andes", "andre", "angel", "animo", "anker", "annas", "anter", "antis", "apart", "apert", "apery", "apies", "appel", "arbei", "arena", "arend", "arier", "aring", "arkel", "armer", "armes", "arnot", "aroom", "arres",
-"arrie", "arsis", "artse", "arums", "asbak", "asbes", "asbok", "asbos", "asbus", "asdan", "asems", "asgat", "asiel", "asier", "asjas", "askar", "aslas", "aslyn", "asnog", "asook", "asore", "aspek", "aspen", "aspis", "assen", "assie",
-"aster", "asuur", "aswan", "asyne", "ateis", "athol"
-];
-
-// Stel pogings en limiet
-const maksimumPogings = 6;
 let reedsGespeelVandag = false;
 
-// Pseudo-random generator gebaseer op seed
-function seededRandom(seed) {
-  let x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
+const woordLys = [
+  "awery", "awend", "avorm", "attar", "atoom", "atome", "atlas", "atjie", "aande", "aanhe"
+  // ... (jou volledige lys hier)
+];
 
-// Deterministiese shuffle
-function shuffleArraySeeded(arr, seed) {
+const maksimumPogings = 6;
+
+function shuffleArray(arr) {
   let a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed + i) * (i + 1));
+    const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
-// Kry vandag se woord
-function kryVandagWoord() {
-  const vandag = new Date();
-  const datumString = vandag.getFullYear() + "-" + (vandag.getMonth()+1) + "-" + vandag.getDate();
-  let seed = 0;
-  for (let i = 0; i < datumString.length; i++) {
-    seed += datumString.charCodeAt(i);
+function laaiWoordVolgorde() {
+  let volgorde = JSON.parse(localStorage.getItem("woordVolgorde") || "null");
+  let index = parseInt(localStorage.getItem("woordVolgordeIndex") || "0", 10);
+  if (!volgorde || !Array.isArray(volgorde) || volgorde.length !== woordLys.length) {
+    volgorde = shuffleArray(woordLys);
+    index = 0;
+    localStorage.setItem("woordVolgorde", JSON.stringify(volgorde));
+    localStorage.setItem("woordVolgordeIndex", index.toString());
   }
-  const geskommeldeLys = shuffleArraySeeded(woordLys, seed);
-  return geskommeldeLys[0]; // eerste woord
+  return { volgorde, index };
+}
+
+function stoorWoordVolgorde(volgorde, index) {
+  localStorage.setItem("woordVolgorde", JSON.stringify(volgorde));
+  localStorage.setItem("woordVolgordeIndex", index.toString());
+}
+
+function kryVandagWoord() {
+  const vandag = new Date().toDateString();
+  const laasteDatum = localStorage.getItem("laasteSpeelDatum");
+  let { volgorde, index } = laaiWoordVolgorde();
+  if (laasteDatum !== vandag) {
+    index++;
+    if (index >= volgorde.length) {
+      volgorde = shuffleArray(woordLys);
+      index = 0;
+    }
+    stoorWoordVolgorde(volgorde, index);
+    localStorage.setItem("laasteSpeelDatum", vandag);
+  }
+  return volgorde[index];
 }
 
 const teikenWoord = kryVandagWoord();
+
 let pogings;
 const vandagSleutel = new Date().toDateString();
 const gestoorDatum = localStorage.getItem("woordPogingsDatum");
@@ -170,6 +178,7 @@ const invoer = document.getElementById("raad-invoer");
 const boodskap = document.getElementById("boodskap");
 const statsDiv = document.getElementById("statistiek");
 const sleutelbord = document.getElementById("sleutelbord");
+
 const letters = "qwertyuiopasdfghjklzxcvbnm";
 const sleutelStatus = {};
 
@@ -217,11 +226,13 @@ function stuurRaaiskoot() {
     boodskap.textContent = "Jy is uit pogings!";
     return;
   }
+
   pogings.push(raai);
   localStorage.setItem("woordPogings", JSON.stringify(pogings));
   werkBordOp();
   invoer.value = "";
   boodskap.textContent = "";
+
   if (raai === teikenWoord) {
     boodskap.textContent = "🎉 Reg geraai!";
     stoorStats(true);
@@ -236,9 +247,7 @@ function werkBordOp() {
   pogings.forEach((woord, ry) => {
     const letterStatus = Array(5).fill("verkeerd");
     const letterCount = {};
-    for (const l of teikenWoord) {
-      letterCount[l] = (letterCount[l] || 0) + 1;
-    }
+    for (const l of teikenWoord) letterCount[l] = (letterCount[l] || 0) + 1;
     for (let i = 0; i < 5; i++) {
       if (woord[i] === teikenWoord[i]) {
         letterStatus[i] = "korrek";
@@ -279,13 +288,14 @@ function werkSleutelbord() {
 function stoorStats(wen) {
   const datumSleutel = new Date().toDateString();
   let stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
+  if (!stats.pogingTelling) stats.pogingTelling = {};
+
   if (!stats.laaste || stats.laaste !== datumSleutel) {
     stats.gespeel = (stats.gespeel || 0) + 1;
     if (wen) {
       stats.wen = (stats.wen || 0) + 1;
       stats.streek = (stats.streek || 0) + 1;
       const pogingAantal = pogings.length;
-      stats.pogingTelling = stats.pogingTelling || {};
       stats.pogingTelling[pogingAantal] = (stats.pogingTelling[pogingAantal] || 0) + 1;
     } else {
       stats.streek = 0;
@@ -298,19 +308,13 @@ function stoorStats(wen) {
 
 function wysStats() {
   const stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-  let pogingData = "<ul>";
-  
-  // Verseker stats.pogingTelling bestaan
   stats.pogingTelling = stats.pogingTelling || {};
-
-  // Wys altyd 1–6 pogings, ook as dit 0 keer is
+  let pogingData = "<ul>";
   for (let i = 1; i <= 6; i++) {
     const keer = stats.pogingTelling[i] || 0;
     pogingData += `<li>${keer} keer gewen in ${i} poging(s)</li>`;
   }
-
   pogingData += "</ul>";
-
   statsDiv.innerHTML = `
     <p>Gespeel: ${stats.gespeel || 0}</p>
     <p>Gewen: ${stats.wen || 0}</p>
@@ -318,7 +322,6 @@ function wysStats() {
     <p>Laas gespeel: ${stats.laaste || "Nog nie"}</p>
     ${pogingData}
   `;
-
   const vandag = new Date().toDateString();
   if (stats.laaste === vandag) {
     reedsGespeelVandag = true;
@@ -328,8 +331,6 @@ function wysStats() {
     if (voerInKnoppie) voerInKnoppie.disabled = true;
   }
 }
-
-
 
 function deelResultaat() {
   let result = `Woord van die Dag – ${pogings.length}/${maksimumPogings}\n`;
@@ -341,17 +342,18 @@ function deelResultaat() {
     }
     result += "\n";
   });
-  result += "\nSpeel hier: https://hanro55.github.io/WoordVirDieDag/index.html";
+  result += "\nSpeel hier: https://jou-webwerf-url";
+
   navigator.clipboard.writeText(result);
-  alert("Resultaat gekopieer! Plak dit in WhatsApp of elders.");
+  alert("Resultaat gekopieer!");
 }
 
-// Laai alles
 laaiBord();
 wysStats();
 laaiSleutelbord();
 werkBordOp();
 </script>
+
 
 
 <section style="max-width:600px; margin:30px auto; padding:10px;">
