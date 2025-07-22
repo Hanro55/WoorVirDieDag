@@ -354,6 +354,11 @@ function deelResultaat() {
   alert("Resultaat gekopieer!");
 }
 
+laaiBord();
+wysStats();
+laaiSleutelbord();
+werkBordOp();
+    
 function uitvoerStats() {
   const stats = localStorage.getItem("woordStats");
   if (!stats) {
@@ -394,11 +399,6 @@ function invoerStats(event) {
   reader.readAsText(file);
 }
 
-
-laaiBord();
-wysStats();
-laaiSleutelbord();
-werkBordOp();
 </script>
 
 
