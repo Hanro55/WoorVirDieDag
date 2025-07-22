@@ -98,7 +98,7 @@
 
   <input id="raad-invoer" maxlength="5" placeholder="Tik 'n woord" autofocus />
   <br />
-  <button onclick="stuurRaaiskoot()">Raai</button>
+  <button onclick="stuurRaaiskoot()">Voer in</button>
   <div id="boodskap"></div>
 
   <div id="sleutelbord"></div>
@@ -108,161 +108,411 @@
   <div id="statistiek"></div>
 
   <script>
-    const woordLys = [
-      "blare", "staan", "vloer", "krans", "trots", "vrees", "spook", "somer", "storm", "verre",
-      "toets", "brief", "klank", "skaap", "snoei", "kamers", "houer", "koers"
-    ];
+let reedsGespeelVandag = false;
 
-    const vandagIndex = Math.floor((Date.now() - new Date("2024-01-01")) / 86400000);
-    const teikenWoord = woordLys[vandagIndex % woordLys.length];
-
-    let pogings = [];
+const woordLys = [
+"awery", "awend", "avorm", "attar", "atoom", "atome", "atlas", "atjie", "aande", "aanhe", "aanhu", "aanja", "aanle", "aanry", "aanse", "aarde", "aards", "abdis", "abdye", "abeba", "abeel", "ablou", "abrup", "abses", "absis", "abuis",
+"adams", "adder", "adieu", "adres", "adret", "afarm", "afbas", "afbel", "afbid", "afbie", "afbou", "afbyt", "afdae", "afdag", "afdak", "afdam", "afdek", "afdig", "afdop", "afdra", "afdun", "afeet", "afend", "afent", "afets", "affek", "afgee", "afgly", "afgod", "afhak", "afhap", "afheg", "afhel", "afhok", "afhol", "afhou", "afhys", "afjak", "afkam", "afkap", "afkom", "afkop", "afkou", "afkry", "afkyk", "aflei", "aflek", "aflig", "aflos", "aflui", "aflyn", "afmat", "afoes", "afoor", "afpak", "afpas", "afpel", "afpen", "afpik", "afpyl", "afrem", "afrig", "afrit", "afrol", "afros", "afruk", "afsak", "afset", "afsit", "afsku", "afsny", "aftak", "aftap", "aftas", "aftel", "aftik", "aftob", "aftog", "aftop", "afval", "afvat", "afvee", "afvra", "afvry", "afvyl", "afwag", "afwas", "afwei", "afwen", "afwin", "afwip", "afwis", "afwit", "afwyk", "afwys",
+"agaam", "agaat", "agarm", "agate", "agave", "ageer", "agens", "aggie", "agste", "agtal", "agter", "aguur", "ahooi", "ahorn", "aiais", "aires", "aitsa", "ajoos", "akant", "akker", "akkie", "aknee", "aksep", "akses", "aksie", "aktes", "aland", "alant", "alarm", "albas", "albei", "album", "aldae", "aldag", "aldan", "aldra", "aldus", "aleer", "algar", "algoa", "alias", "alibi", "alice", "alida", "alkyn", "allee", "aller", "alles", "allig", "almag", "almal", "alnag", "aloue", "alras", "alsem", "alton", "altyd", "aluin", "alwys", "amaas", "amara", "ambag", "amber", "amebe", "amens", "amice", "amien", "amine", "amman", "amorf", "ampas", "ampel", "amper", "ampie", "ampre", "ampte", "ampul", "anaal", "anale", "ander", "andes", "andre", "angel", "animo", "anker", "annas", "anter", "antis", "apart", "apert", "apery", "apies", "appel", "arbei", "arena", "arend", "arier", "aring", "arkel", "armer", "armes", "arnot", "aroom", "arres", "arrie", "arsis", "artse", "arums", "asbak", "asbes", "asbok", "asbos", "asbus", "asdan", "asems", "asgat", "asiel", "asier", "asjas", "askar", "aslas", "aslyn", "asnog", "asook", "asore", "aspek", "aspen", "aspis", "assen", "assie", "aster", "asuur", "aswan", "asyne", "ateis", "athol", 
+"bywyf", "bywas", "byvul", "byval", "byvak", "byter", "bytel", "bysyn", "byson", "bysny",
+"baaie", "baard", "baars", "babas", "babel", "baber", "baboe", "badde", "baken", "baker",
+"bakke", "baler", "balie", "balju", "balke", "balle", "bande", "banjo", "banke", "barak",
+"baret", "baroe", "barok", "baron", "barre", "basaf", "basie", "basil", "basis", "baske",
+"basse", "basta", "bates", "batho", "batig", "batik", "batis", "batos", "beaam", "bebos",
+"bebou", "bedag", "bedde", "bedek", "bedel", "bedes", "bedil", "bedol", "bedot", "bedou",
+"bedra", "bedug", "bedui", "beeld", "beerf", "begin", "begum", "begyn", "behae", "behep",
+"behou", "beide", "beier", "beige", "beits", "bejag", "bekaf", "bekap", "beken", "beker",
+"bekis", "bekke", "bekla", "bekom", "bekyk", "belas", "belee", "beleg", "belet", "belge",
+"belig", "belol", "belug", "belus", "belyn", "beman", "bemes", "bemin", "bemis", "bemos",
+"benat", "bende", "benet", "bengu", "benig", "benou", "benul", "benut", "beoog", "bepan",
+"berde", "berea", "bereg", "berei", "berge", "berig", "beril", "berin", "berke", "berou",
+"berug", "berus", "berym", "beryx", "besef", "besem", "beset", "besie", "besig", "besin",
+"besit", "besny", "beste", "betas", "betel", "beter", "betig", "betoe", "beton", "beuel",
+"beuke", "beule", "beuls", "beurs", "beurt", "beval", "bevat", "beveg", "bevel", "bevit",
+"bevog", "bevry", "bewei", "bewer", "bewoe", "bewus", "bewys", "bidet", "bieer", "biere",
+"biese", "bilal", "biner", "binne", "biota", "bisar", "bisse", "blaai", "blaak", "blaam",
+"blaar", "blaas", "blank", "blaps", "blare", "blase", "bleek", "bleik", "blein", "bliep",
+"blind", "blink", "blits", "bloed", "bloei", "bloes", "blond", "bloos", "bloot", "blote",
+"bloue", "blyer", "blyke", "boaan", "boarm", "bobly", "bobou", "bobyn", "bodek", "bodem",
+"bodes", "boeie", "boeke", "boent", "boere", "boers", "boeta", "boete", "boewe", "bogte",
+"bohou", "bojan", "bokas", "bokke", "bokom", "bokry", "bokse", "bokwa", "bolae", "boleu",
+"bolig", "bolip", "bolla", "bolle", "bolug", "bolus", "bolyf", "bomme", "bonde", "bonek",
+"bongo", "bonte", "bonus", "boons", "booor", "boord", "boort", "boots", "bopad", "borde",
+"borge", "borok", "boron", "bosak", "boser", "bosse", "botel", "botha", "botte", "boude",
+"bouer", "bouit", "boute", "bowle", "braaf", "braai", "braak", "braam", "brame", "brand",
+"bravo", "breed", "breek", "breer", "brein", "breuk", "brief", "briek", "bries", "bring",
+"brode", "broei", "broek", "broer", "broes", "brons", "brood", "broos", "brose", "bruid",
+"bruin", "bruis", "bruma", "brute", "bruto", "bruut", "bryer", "buike", "buise", "buite",
+"bukse", "bulle", "bulte", "buret", "burge", "busse", "buthi", "buurt", "bybel", "bybly",
+"bybou", "bydam", "bydra", "byeen", "bygee", "bygif", "byhou", "bykom", "bykos", "bykry",
+"bylae", "bylas", "bylyn", "bymot", "bynes", "bypas", "byrol", "byset", "bysin", "bysit",
+"daags", "dadel", "dader", "dagga", "dagha", "dagse", "dakke", "dalet", "dalks", "damas", "dames", "damme", "dampe", "danig", "danke", "danse", "darem", "dasse", "datum", "davel", "davit", "dawee", "dawer", "dawid", "dawie", "dawit", "debat", "debet", "decor", "deels", "deens", "defek", "degen", "deins", "deken", "dekke", "dekor", "deler", "delft", "delik", "delta", "delwe", "demat", "demon", "denge", "denim", "denke", "denne", "depot", "derby", "derde", "derms", "derwe", "deser", "deses", "deuke", "deure", "devon", "dicta", "dieet", "diens", "diepe", "diere", "diete", "diets", "diewe", "dinge", "dingo", "diode", "direk", "disas", "disse", "ditto", "diwan", "doder", "dodes", "dodos", "doeke", "doele", "doepa", "doges", "dogma", "dohne", "dokke", "dolke", "dolle", "dolos", "dolwe", "domba", "domme", "donda", "donga", "donor", "donse", "doods", "dooie", "doorn", "doper", "doppe", "dorpe", "dorps", "dorre", "dorte", "dosie", "dosis", "dosyn", "dotte", "douro", "dower", "dowes", "dowwe", "doyen", "draad", "draag", "draai", "draak", "draal", "drade", "draer", "drake", "drama", "drang", "drank", "drawe", "dreef", "dreig", "drein", "drenk", "dreun", "drewe", "driee", "dries", "drink", "droef", "droer", "droes", "drome", "dronk", "droog", "droom", "druif", "druil", "druip", "druis", "drywe", "dubio", "duike", "duime", "duine", "duite", "duits", "duiwe", "dumbe", "dungu", "dunte", "duplo", "durwe", "duske", "duvet", "duvha", "duwwe", "dwaal", "dwaas", "dwang", "dwars", "dwase", "dweep", "dweil", "dwelm", "dwerg", "dwing", "divan", "digby", "digte", "dikte", "dille", "dinee",
+"ester", "ertse", "eland", "elfde", "elgin", "elite", "erker", "erken", "ellie", "ellis", "enige", "erica", "erika", "erwek", "esels", "esker", "ergot", "erger", "erens", "enjin", "enkel", "enorm", "enter", "entre", "envis", "epiek", "epies", "essie", "etser", "etter", "etude", "eunug", "euros", "euwel", "ewige", "etjie", "etika", "eties", "eston", "etaan", "etage", "eteen", "etend", "eters", "etery", "etiek", "etiel", "egoli", "egter", "eiers", "einde", "eiser", "egger", "egaal", "effen", "edeem", "edele", "edeme", "eelte", "eende", "eetwa", "eeuse", "effek", "eiwit", "eksak", "email", "emirs", "emmer", "emoes", "enema", "eners", "engel", "enger", "elsie", "elsas", "ekses", "ekspo", "eloff", "engte",
+"fiats", "filer", "filet", "foute", "films", "fingo", "finis", "finne", "fotos", "foton", "fjord", "floks", "flora", "fluim", "fluit", "fluks", "fnuik", "fobie", "fokus", "folio", "fonds", "fooie", "flits", "flirt", "flair", "flank", "flans", "flaps", "flard", "fleim", "flens", "flets", "fleur", "fliek", "flink", "flint", "forel", "forma", "forse", "fries", "frons", "front", "fugas", "fuike", "fuiwe", "fungi", "furie", "fusie", "fyner", "forte", "forum", "foyer", "fraai", "frank", "frans", "frase", "frats", "frees", "fynte", "fisis", "fabel", "fases", "faset", "fasie", "fatte", "fatum", "fauna", "faune", "faure", "feeks", "feile", "feite", "farao", "farad", "facie", "fakse", "falie", "falle", "felle", "femel", "femur", "fieta", "fiets", "fikse", "finse", "fiole", "fiool", "fiere", "fielt", "fenol", "ferie", "ferme", "fesse", "fetus", "fiela", "firma",
+"gysel", "gulpe", "gulde", "gaans", "gaats", "gades", "galas", "galei", "galge", "galle", "galms", "galop", "gange", "ganna", "ganse", "gaper", "garde", "gares", "gasse", "gaste", "gatry", "gatte", "gawes", "gebad", "gebak", "gebal", "geban", "gebed", "gebek", "gebel", "gebid", "gebie", "gebit", "gebly", "gebod", "geboe", "gebou", "gebuk", "gebyt", "gedag", "gedam", "gedek", "gedig", "gedip", "gedoe", "gedog", "gedop", "gedra", "gedug", "gedui", "gedun", "gedut", "geeis", "geend", "geent", "geerf", "gefop", "gegee", "gegis", "geglo", "gegly", "gegun", "gehad", "gehak", "gehap", "geheg", "gehei", "gehik", "gehok", "gehol", "gehop", "gehou", "gehug", "gehul", "gehup", "gehyg", "gehys", "geite", "gejag", "gejas", "gejil", "gejok", "gejol", "gejou", "gekam", "gekap", "gekef", "geken", "gekir", "gekis", "gekke", "gekla", "gekom", "gekop", "gekos", "gekou", "gekry", "gekyk", "gekys", "gelag", "gelap", "gelas", "gelde", "gelee", "geleg", "gelei", "gelid", "gelig", "gelok", "gelol", "gelos", "gelug", "gelui", "geluk", "gelyk", "gelyn", "gelys", "gemak", "gemat", "gemik", "gemin", "gemis", "gemol", "gemor", "gemuf", "gemyn", "genee", "genes", "genie", "genis", "genot", "genus", "geoes", "geoog", "gepak", "gepas", "gepel", "gepik", "gepla", "gepof", "gepor", "gepos", "gepot", "gepuf", "geput", "gepyl", "gepyn", "gered", "gereg", "gerei", "gerek", "gerig", "gerol", "gerot", "gerou", "gerug", "geruk", "gerus", "gerwe", "geryg", "gerym", "geryp", "gesag", "gesak", "gesel", "geset", "gesig", "gesin", "gesit", "gesny", "gesog", "gespe", "gestu", "gesug", "gesus", "gesyg", "getak", "getal", "getap", "getas", "getee", "getel", "getik", "getob", "getol", "getop", "getou", "getug", "getye", "getyg", "geuit", "geure", "geute", "geval", "gevas", "gevat", "gevee", "geveg", "gevel", "gevin", "gevis", "gevou", "gevra", "gevry", "gevul", "gevyl", "gewae", "gewag", "gewas", "gewed", "gewee", "gewei", "gewen", "gewer", "gewes", "gewet", "gewig", "gewik", "gewil", "gewin", "gewip", "gewis", "gewit", "gewyk", "gewys", "gidse", "gieke", "giere", "giers", "gifte", "gilde", "gille", "ginds", "giraf", "giste", "glaas", "glans", "glase", "gleuf", "glimp", "glips", "globe", "gloed", "gloei", "glooi", "gloor", "glore", "gluip", "gluur", "gneis", "gnoom", "godes", "godin", "goede", "goeds", "goeie", "gogel", "gogga", "golwe", "gompo", "goras", "gorde", "gores", "gouda", "gouds", "gouer", "graad", "graaf", "graag", "graai", "graal", "graan", "graas", "graat", "grade", "grane", "grate", "grawe", "greep", "grein", "grens", "grepe", "grief", "griek", "griep", "griet", "grime", "grint", "groef", "groei", "groen", "groep", "groet", "grond", "groos", "groot", "grote", "gruis", "gryns", "gryse",
+"hoeke", "hiert", "hiena", "hiele", "hidra", "hiate", "hiaat", "hewwe", "hewig", "hewel", "haags", "haaie", "haaks", "haard", "habyt", "hades", "haker", "hakie", "hakke", "haler", "halle", "hallo", "halms", "halos", "halse", "halte", "halwe", "hamel", "hamer", "hamme", "hande", "hange", "haper", "happe", "harde", "harig", "harke", "harpe", "harse", "harte", "hasie", "hater", "hatig", "hawer", "hawes", "hebbe", "heden", "heers", "hegte", "heide", "hekel", "hekke", "hekse", "helde", "heler", "helle", "helms", "helse", "hemde", "hemel", "herde", "herfs", "hernu", "herse", "herte", "herwy", "heryk", "heser", "heter", "hetig", "hetse", "hetsy", "heupe", "hiets", "himen", "himne", "hinde", "hippe", "hisop", "hitte", "hoede", "hoeka", "hoeks", "hoera", "hoewe", "hokke", "holte", "homos", "hompe", "honde", "honds", "hoofs", "hoogs", "hoort", "hopie", "hoppe", "horde", "horig", "horte", "houer", "houte", "huide", "huige", "huile", "huise", "hulde", "hulle", "hulpe", "hulse", "humor", "humus", "hunne", "hunse", "huppe", "hupse", "hurke", "husse", "hutte", "hyser",
+"inkam", "inner", "innig", "inpak", "inpas", "inpik", "inpot", "inpyl", "inrig", "inlig", "inruk", "inrye", "inryg", "insae", "insak", "insek", "inset", "insig", "insit", "insny", "insok", "insyg", "intak", "inrol", "inrit", "inlok", "inlos", "inlui", "inlyf", "inlyn", "inlys", "intap", "intel", "inter", "inwip", "inwin", "inwig", "intik", "intog", "intou", "inval", "invat", "invet", "invog", "invou", "invra", "invul", "invyl", "inwag", "inwas", "inwee", "inlek", "immer", "impak", "impie", "inbed", "inbel", "inbly", "inbou", "inbuk", "inbyt", "indam", "inhou", "inhul", "inkap", "inkas", "inkom", "inkry", "inkyk", "inlae", "inlas", "inleg", "inhol", "inhok", "inhel", "indik", "indra", "indut", "indyk", "ineen", "inent", "inert", "inets", "infra", "ingee", "ingly", "inham", "inhei", "inlei",
+"jonge", "jongs", "jolig", "jouer", "jubel", "jutse", "jarig", "jagte", "javel", "jawel", "jasse", "jukke", "jukka", "jaers", "jaart", "jalap", "jabot",
+"kykie", "kyker", "kwota", "kwint", "kwilt", "kwiek", "kwets", "kwela", "kaaps", "kaart", "kaats", "kabel", "kader", "kadet", "kafee", "kagie", "kakie", "kalme", "kalwe", "kamee", "kamer", "kamma", "kamme", "kampe", "kanis", "kanne", "kanol", "kanon", "kanos", "kanse", "kante", "kapel", "kaper", "kapok", "kapot", "kappe", "karaf", "karee", "karig", "karos", "karpe", "karre", "karst", "karwy", "kasie", "kasig", "kasse", "kaste", "kasty", "katel", "kater", "katot", "katse", "katte", "katyf", "kawel", "kebab", "keels", "kegel", "keile", "kelke", "kelte", "kemel", "kenne", "keper", "kepie", "kepse", "kerel", "kerke", "kerks", "kerne", "kerns", "kerse", "kerwe", "ketel", "keten", "keuse", "kewer", "kiaat", "kieke", "kiele", "kieme", "kiesa", "kiese", "kiets", "kieue", "kiewe", "kikke", "kille", "kimme", "kinds", "kinke", "kinne", "kiste", "kitse", "klaag", "klaar", "klaer", "klamp", "klank", "klant", "klase", "klede", "kleed", "kleef", "kleim", "klein", "klere", "klerk", "klets", "kleur", "klewe", "klief", "kliek", "klier", "kling", "klink", "klits", "kloek", "klomp", "klont", "kloof", "kloot", "klops", "klote", "klots", "kloue", "klowe", "klubs", "kluif", "kluis", "kluit", "kluts", "kluwe", "knaag", "knaap", "knaks", "knape", "knars", "kneep", "kneer", "knees", "knegs", "knerp", "kners", "kneus", "kniee", "kniel", "knies", "knoei", "knoes", "knoet", "knole", "knoop", "knope", "knots", "knoue", "knuis", "knype", "koeel", "koeie", "koeke", "koele", "koers", "koets", "koker", "koket", "kokke", "kolke", "kolle", "kolom", "kolon", "kolos", "kolwe", "komaf", "komas", "komma", "komme", "komyn", "kopaf", "kopal", "kopek", "koper", "kopie", "koppe", "koris", "korps", "korte", "korwe", "kosse", "koste", "kosyn", "kouer", "kouse", "kraag", "kraai", "kraak", "kraal", "kraam", "kraan", "krake", "krale", "krame", "kramp", "krane", "krank", "krans", "kreef", "kreek", "kreet", "kreng", "krenk", "krete", "kreuk", "kreun", "krewe", "kriek", "kriel", "krimp", "kring", "krink", "kroeg", "kroek", "kroep", "kroes", "krone", "kroon", "kroos", "krose", "kruid", "kruie", "kruik", "kruim", "kruin", "kruip", "kruis", "kruit", "kruks", "kubis", "kubus", "kudde", "kuier", "kuile", "kuipe", "kuise", "kuite", "kuiwe", "kunde", "kunne", "kupel", "kupie", "kurke", "kurwe", "kusse", "kuste", "kwaad", "kwaai", "kwaak", "kwaal", "kwade", "kwale", "kwant", "kwark", "kwart", "kweek", "kweel", "kween",
+"loods", "lepra", "lepel", "loper", "lente", "lense", "lopie", "laaie", "laars", "lager", "lagie", "laken", "lakke", "lakse", "lamel", "lamme", "lampe", "lande", "lange", "langs", "lanse", "lapel", "lappe", "larie", "larwe", "laser", "lasse", "lasso", "laste", "latei", "later", "latte", "ledag", "ledig", "leers", "leery", "leeus", "leges", "leier", "lekke", "lelie", "lelik", "lelle", "lemma", "lemme", "lende", "lener", "lenig", "leser", "lesse", "leste", "leuen", "leuse", "lewer", "lewes", "liaan", "libel", "liefs", "liere", "liewe", "ligas", "ligte", "linde", "linie", "links", "linne", "linte", "lippe", "lisse", "liste", "liter", "litte", "lobbe", "loepe", "loges", "logge", "loket", "lokke", "lompe", "longe", "lonke", "lonte", "loops", "lorre", "losie", "losse", "lotte", "louer", "lower", "lowwe", "lugte", "luide", "luier", "luike", "luime", "luise", "luite", "lumen", "lunet", "lunse", "lusse", "luste", "luuks", "lyers", "lyfie", "lysie", "lyste", "lywal", "lywig",
+"midde", "meter", "messe", "merke", "morge", "merel", "maagd", "maand", "maart", "maats", "magie", "magte", "maker", "maler", "malie", "malle", "malse", "mamas", "maner", "manie", "manke", "manna", "manne", "mappe", "marge", "marke", "marse", "masel", "maser", "massa", "masse", "maste", "mater", "mates", "matie", "matig", "matte", "mebos", "media", "meent", "meeue", "meide", "melde", "mense", "mente", "menus", "metro", "mette", "meule", "miere", "milde", "minag", "minie", "minim", "minis", "minne", "minus", "mirre", "mirte", "misse", "mites", "model", "modus", "moede", "moere", "moete", "moets", "moker", "molle", "monde", "mooie", "moois", "moord", "moors", "moppe", "morel", "mores", "mosie", "mosse", "motel", "motet", "motor", "motte", "motto", "mowwe", "muile", "muise", "mulat", "munte", "mymer", "myner", "myter",
+"niets", "niere", "nogal", "nodig", "nobel", "nimfe", "newel", "neute", "neuse", "netto", "nette", "nihil", "nulle", "nurks", "nutte", "nywer", "nydig", "nuwer", "nuuts", "norme", "noppe", "noors", "noord", "nooit", "nonne", "norse", "noute", "nouer", "notas", "nosie", "nasny", "naief", "nasit", "nasin", "nasie", "narig", "nader", "nagte", "nagse", "nagee", "nafta", "naels", "nabye", "naald", "naand", "nabla", "navye", "navra", "natte", "nawel", "nawee", "nawys", "netso", "nekke", "nefie", "neefs", "neder", "netel", "neste", "nerwe", "nerts",
+"ovale", "ovaal", "ouwyf", "outie", "ousus", "ouste", "ousie", "oupas", "oases", "objek", "oefen", "oesaf", "oeste", "oewer", "offer", "ogies", "oksel", "olies", "olywe", "omarm", "omber", "ombou", "omdat", "omdop", "omdra", "omega", "omgee", "omhou", "omhul", "omkom", "omkry", "omkyk", "omlei", "omlyn", "omlys", "ompad", "ompak", "ompas", "ompik", "omrol", "omruk", "omset", "omsig", "omsit", "omsny", "omtak", "omtas", "omval", "omvat", "omver", "omvou", "omwal", "omweg", "omwip", "onder", "ondig", "oneer", "onewe", "onfyn", "onmag", "onmin", "onnet", "onnut", "onpas", "onreg", "onrus", "onryp", "onsag", "onses", "onsin", "ontug", "ontwy", "ontyd", "ontys", "onvas", "onvry", "onwel", "onwil", "onwis", "onwys", "oonde", "oorde", "ooste", "opaak", "opaal", "opbel", "opbie", "opbly", "opbod", "opbou", "opdam", "opdat", "opdis", "opdop", "opdra", "opeen", "opeet", "opeis", "opgee", "ophap", "ophef", "ophel", "ophop", "ophou", "ophys", "opkam", "opkap", "opkom", "opkry", "opkyk", "oplae", "oplap", "oplei", "oplek", "oplet", "oplig", "oplos", "oplug", "oplui", "oppak", "oppas", "opper", "oppik", "oppot", "opreg", "oprek", "oprig", "oprit", "oprol", "oprui", "opruk", "opryg", "oprys", "opset", "opsie", "opsig", "opsit", "opsny", "opsom", "opstu", "optel", "optog", "opval", "opvat", "opvee", "opvis", "opvou", "opvra", "opvul", "opwag", "opwas", "opwek", "opwel", "opwen", "opwin", "opwip", "oraal", "orals", "orden", "order", "ordes", "oreer", "orent", "orkes", "orrel", "oskop", "osvel", "otter", "oubos", "oubul", "oudag", "oudak", "ouder", "oudit", "ouels", "ouens", "ouere", "ouers", "ougat", "oulap", "oulik", "oulyf", "ouman", "oumas", "ounag", "ounoi", "ouooi",
+"pypie", "pyper", "pynig", "pyler", "putte", "putse", "paaie", "paaps", "padaf", "padda", "padop", "pakke", "pakte", "pakys", "palet", "palle", "palms", "pande", "panga", "panne", "pante", "papas", "paper", "papie", "pappe", "parel", "parte", "party", "pasop", "passe", "patat", "pater", "peile", "peins", "pekel", "pelle", "pelse", "penne", "pense", "peper", "perde", "perel", "perke", "perse", "peste", "peule", "pieke", "piele", "pienk", "piepe", "piere", "piets", "piket", "pikke", "pille", "pinas", "pinte", "pipet", "pitte", "plaag", "plaak", "plaas", "plaat", "plank", "plant", "plase", "plate", "plebs", "pleeg", "plein", "pleit", "pleks", "plint", "ploeg", "plomp", "plons", "plooi", "pluim", "pluis", "poeme", "poena", "poete", "poets", "pokke", "polka", "polle", "polse", "pompe", "ponde", "ponie", "ponse", "ponte", "pools", "poort", "poppe", "porie", "porte", "posie", "poste", "potas", "potig", "potte", "pouse", "praai", "praal", "praat", "preek", "preke", "prent", "priem", "prins", "proef", "proes", "pronk", "pront", "prooi", "proue", "pruik", "pruil", "pruim", "pruis", "pruts", "pryse", "psalm", "pukke", "pulle", "punte",
+"raars", "rabas", "rabat", "radar", "radon", "radys", "rafel", "rakel", "raket", "rakke", "ralle", "ramie", "ramme", "rampe", "rande", "range", "ranis", "ranke", "rante", "rapse", "raser", "rasie", "raspe", "rasse", "ratel", "ratse", "ratte", "ravot", "ravyn", "reaal", "rebel", "redan", "redde", "reder", "redes", "reeds", "reeks", "reels", "reens", "reent", "regaf", "regby", "regop", "regse", "regte", "reier", "reine", "reise", "rekas", "rekel", "reken", "rekke", "reles", "relik", "remme", "renet", "renne", "rente", "repel", "repie", "rerig", "resep", "reste", "reuke", "reuse", "ribbe", "riele", "rieme", "riete", "ringe", "riole", "riool", "rites", "ritme", "ritse", "ritte", "riwwe", "robbe", "robot", "robyn", "roede", "roeie", "roeke", "roepe", "roere", "roers", "roete", "roewe", "rofie", "rogge", "roker", "rokie", "rokke", "rolle", "romme", "rompe", "ronde", "ronge", "rooie", "rooms", "ropye", "roset", "rosie", "rosig", "rosse", "rosyn", "rotor", "rotse", "rotte", "rower", "rowwe", "ruens", "rugby", "rugge", "ruier", "ruike", "ruile", "ruime", "ruine", "ruite", "rukke", "rumba", "runes", "rusie", "ruspe", "russe", "ruste", "ruweg", "ryers", "ryker", "rykes", "rykie", "rylig", "rymer", "rynie", "rypad", "rypak", "ryper", "rypes", "ryreg", "ryrok", "rysie", "rysig", "rytyd", "ryweg",
+ "syweg", "sytak", "sysie", "sysak", "sysag", "syrok", "sypel", "sypad", "synse", "syner",  
+"saals", "saans", "sabel", "sadis", "sagas", "sages", "sagie", "sagte", "sakie", "sakis",  
+"sakke", "sakse", "saldo", "salie", "salig", "salms", "salon", "salot", "salto", "salvo",  
+"salwe", "samel", "sande", "sange", "sappe", "sarie", "saris", "sater", "satis", "satyn",  
+"sauna", "sedan", "seder", "sedes", "sedig", "seels", "seelt", "seens", "seker", "sekse",  
+"sekte", "selde", "selfs", "selle", "sense", "sente", "sepia", "sepie", "serie", "serpe",  
+"serre", "serum", "sesam", "sesde", "sesie", "sesse", "setel", "sette", "seuns", "seurs",  
+"sfeer", "sifon", "sigma", "silfe", "silos", "simba", "sinds", "sinne", "sinte", "sinus",  
+"sisal", "siste", "siter", "skaad", "skaaf", "skaai", "skaak", "skaal", "skaam", "skaap",  
+"skaar", "skaat", "skade", "skadu", "skald", "skale", "skans", "skape", "skare", "skawe",  
+"skede", "skeef", "skeel", "skeen", "skeep", "skeer", "skeet", "skeie", "skeil", "skelm",  
+"skema", "skend", "skenk", "skepe", "skere", "skerf", "skerm", "skerp", "skets", "skeur",  
+"skeut", "skewe", "skier", "skies", "skiet", "skild", "skimp", "skink", "skoei", "skoen",  
+"skoep", "skole", "skons", "skool", "skoon", "skoor", "skoot", "skore", "skors", "skort",  
+"skote", "skots", "skram", "skrap", "skree", "skrei", "skrif", "skrik", "skril", "skrip",  
+"skrop", "skrum", "skryf", "skuif", "skuil", "skuim", "skuit", "skuld", "skulp", "skure",  
+"skurf", "skurk", "skuts", "skuur", "skuus", "skuwe", "skywe", "slaaf", "slaag", "slaai",  
+"slaak", "slaan", "slaap", "slaat", "slang", "slank", "slawe", "sleep", "slegs", "slemp",  
+"sleng", "slenk", "sleuf", "sleur", "slier", "slink", "sloep", "sloer", "slons", "sloof",  
+"sloom", "sloop", "sloot", "slote", "sluik", "sluip", "sluis", "sluit", "slurp", "sluwe",  
+"slyts", "smaad", "smaak", "smaal", "smake", "smart", "smede", "smeed", "smeek", "smeer",  
+"smelt", "smeul", "smoel", "smoor", "smous", "smout", "snaak", "snaar", "snags", "snake",  
+"snaps", "snare", "snars", "snede", "sneef", "snees", "sneeu", "snerp", "sners", "snert",  
+"snobs", "snoef", "snoei", "snoek", "snoep", "snoer", "snoet", "snood", "snork", "snuif",  
+"snuit", "snyer", "sober", "sodat", "sodra", "soeke", "soeks", "soele", "soene", "soepe",  
+"soese", "soete", "soets", "soewe", "sofas", "sokke", "solde", "soler", "solis", "solle",  
+"solos", "somas", "somer", "somma", "somme", "sonde", "soneg", "sones", "sonne", "sonop",  
+"sonsy", "sooie", "soort", "sopie", "soppe", "sorge", "sotte", "souse", "soute", "sover",  
+"sowat", "sowel", "spaak", "spaan", "spaar", "spaat", "spade", "spalk", "spane", "spang",  
+"spant", "spare", "speek", "speel", "speen", "speer", "speld", "spele", "spelt", "spene",  
+"spens", "spere", "sperm", "speur", "spier", "spies", "spint", "spits", "split", "splyt",  
+"spoed", "spoeg", "spoel", "spoke", "spons", "spook", "spoor", "spore", "sport", "sprak",  
+"sprei", "sprot", "spuit", "spuls", "spuug", "spyse", "spyte", "staaf", "staak", "staal",  
+"staan", "staar", "staat", "stade", "stads", "stake", "stale", "stamp", "stand", "stang",  
+"stank", "stase", "state", "stawe", "stede", "steeg", "steek", "steel", "steen", "steil",  
+"steke", "stele", "stelp", "stelt", "stene", "stere", "sterf", "sterk", "stern", "stert",  
+"steun", "steur", "stewe", "stief", "stier", "stink", "stoei", "stoel", "stoep", "stoer",  
+"stoet", "stola", "stolp", "stomp", "stond", "stonk", "stoof", "stook", "stool", "stoom",  
+"stoor", "stoot", "storm", "stort", "stote", "stout", "stowe", "straf", "strak", "stram",  
+"strek", "strem", "stres", "strik", "strop", "strot", "stryd", "stryk", "stuif", "stuik",  
+"stuip", "stuit", "stuks", "stulp", "stuur", "style", "stywe", "suide", "suier", "suite",  
+"sulke", "sulks", "sulle", "sulte", "super", "susse", "swaai", "swaan", "swaar", "swael",  
+"swaer", "swalk", "swalp", "swane", "swang", "sware", "swart", "sweed", "sweef", "sweem",  
+"sweep", "sweer", "sweet", "sweis", "swelg", "swenk", "swepe", "swerf", "swerk", "swerm",  
+"swets", "swewe", "swiep", "swier", "swink", "swoeg", "swoel", "swoer", "swyne", "sybas",  
+"sybok", "sybos", "sydak", "syfer", "syhek", "sylig", "sylyn", "synde", "synek",
+"tydig", "taaie", "tabak", "tabel", "tabes", "tablo", "taboe", "tafel", "takel", "takie", "takke",  
+"talie", "talje", "talle", "talus", "tamme", "tande", "tange", "tanig", "tante", "tapir", "tappe",  
+"tapyt", "tarra", "tarsi", "tarwe", "tasse", "tatas", "tater", "tatta", "taxis", "teder", "teels",  
+"teelt", "tefie", "teken", "teler", "telge", "temas", "temer", "tempo", "tenke", "tenks", "tensy",  
+"tente", "tenue", "tepel", "tereg", "terge", "terme", "terne", "terra", "tersy", "terte", "terts",  
+"terug", "tesis", "tesse", "tette", "tiere", "tiers", "tiete", "tikke", "tinde", "tinte", "tipes",  
+"tippe", "tiran", "titel", "tjalk", "tjank", "tjeks", "tjers", "tjilp", "tjips", "tjirp", "tjoek",  
+"tjops", "tjoue", "tjous", "toele", "toere", "toese", "toets", "toewe", "toewy", "togas", "togte",  
+"tolke", "tolle", "tolwe", "tombe", "tonge", "tonka", "tonne", "tonus", "tooms", "toorn", "toppe",  
+"torre", "torse", "torso", "torus", "totem", "tower", "traag", "traak", "traan", "trane", "trans",  
+"trant", "trede", "treil", "trein", "trema", "trens", "treur", "trios", "trips", "trits", "troef",  
+"troei", "troep", "tromp", "trone", "tronk", "troon", "troop", "troos", "trope", "trots", "troue",  
+"truie", "trust", "truuk", "tubas", "tuine", "tuite", "tulle", "tulpe", "tunas", "turks",
+"ultra", "uniek", "unies", "uraan", "uboot", "ureum", "urien", "urine", "uself", "uiers",  
+"uitdy", "uiter", "uitja", "uitle", "uitry",
+"vaars", "vaart", "vader", "vager", "vakte", "vakke", "valer", "valke", "valle", "valse", "vanaf", "vange", "vangs", "vanne", "varke", "varre", "varse", "vasal", "vasel", "vasie", "vasle", "vasry", "vaste", "veels", "veers", "veery", "veins", "velde", "veler", "velle", "venne", "vente", "venyn", "veraf", "verag", "veral", "veras", "verby", "verge", "verja", "verle", "verly", "vermy", "verre", "versa", "verse", "verso", "verte", "verwe", "veryl", "verys", "vesel", "veste", "veter", "vetes", "vette", "viets", "vilet", "vinde", "vinke", "vinne", "vinte", "visie", "visse", "vista", "vlaag", "vleel", "vlees", "vleet", "vleie", "vleis", "vlerk", "vlete", "vleug", "vlied", "vliee", "vlieg", "vlies", "vliet", "vloed", "vloei", "vloek", "vloer", "vlooi", "vloot", "vlote", "vlyme", "vodde", "voege", "voels", "voere", "voert", "voete", "volke", "volks", "volle", "volop", "volte", "vonds", "vonke", "vonte", "voort", "vorme", "vorms", "vosse", "vouer", "vraag", "vraat", "vraer", "vrank", "vrate", "vrede", "vrees", "vreet", "vrese", "vries", "vrind", "vroed", "vroeg", "vrome", "vroom", "vroue", "vryaf", "vryer", "vryes", "vryry", "vrywe", "vuile", "vulle", "vywer", "vysel", "vyler", "vygie", "vyfde", "vyand", "vurke", "vurig",
+"waaie", "waard", "waens", "wafel", "wagte", "waker", "wakse", "walle", "walms", "walse", "wande", "wange", "wanne", "wants", "wapad", "wapen", "warme", "wasse", "wasem", "wasig", "water", "watse", "watte", "webbe", "weder", "weeig", "weens", "weers", "weger", "wegja", "wegle", "wegry", "weide", "weids", "weier", "welaf", "welig", "welke", "welwe", "wemel", "wende", "wenen", "wener", "wenke", "wenne", "wense", "werke", "werst", "werwe", "wesel", "wespe", "weste", "wette", "wewer", "wiege", "wieke", "wiele", "wiens", "wiere", "wigge", "wigte", "wikke", "wilde", "wilds", "wilge", "wille", "winde", "wippe", "wisse", "wites", "witse", "witte", "woede", "woema", "woeps", "woere", "woers", "wolke", "wolwe", "wonde", "woord", "worpe", "worse", "woude", "wouel", "wraak", "wrake", "wrang", "wrede", "wreed", "wreef", "wreek", "wring", "wroeg", "wroet", "wrong", "wysig", "wysie", "wyses", "wyser", "wyfie", "wydte", "wyder", "wybak", "wurms", "wulwe", "wulpe", "wulps",
+"ysere", "yssee", "yling", "yssak", "ysbyl", "yspik", "yspak", "ysige", "yskas", "yskis", "ystee", "yster", "ystyd", "ysvos", "ysvry", "yslik", "ydele", "ytjie",
+"zebra"
+];
+   
     const maksimumPogings = 6;
 
-    const bord = document.getElementById("bord");
-    const invoer = document.getElementById("raad-invoer");
-    const boodskap = document.getElementById("boodskap");
-    const statsDiv = document.getElementById("statistiek");
-    const sleutelbord = document.getElementById("sleutelbord");
-
-    const letters = "qwertyuiopasdfghjklzxcvbnm";
-    const sleutelStatus = {};
-
-    function laaiBord() {
-      bord.innerHTML = "";
-      for (let i = 0; i < maksimumPogings * 5; i++) {
-        const tegel = document.createElement("div");
-        tegel.className = "tegel";
-        bord.appendChild(tegel);
+    // Funksie om 'n array te shuffle (Fisher-Yates algoritme)
+    function shuffleArray(arr) {
+      let a = arr.slice(); // maak 'n kopie
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
+      return a;
     }
 
-    function laaiSleutelbord() {
-      sleutelbord.innerHTML = "";
-      letters.split("").forEach(l => {
-        const knoppie = document.createElement("button");
-        knoppie.textContent = l;
-        knoppie.className = "sleutel";
-        knoppie.onclick = () => invoer.value += l;
-        knoppie.id = "sleutel-" + l;
-        sleutelbord.appendChild(knoppie);
-      });
+    // Laai die geskuide lys en indeks uit localStorage
+    function laaiWoordVolgorde() {
+      let volgorde = JSON.parse(localStorage.getItem("woordVolgorde") || "null");
+      let index = parseInt(localStorage.getItem("woordVolgordeIndex") || "0", 10);
 
-      const terug = document.createElement("button");
-      terug.textContent = "←";
-      terug.className = "sleutel";
-      terug.onclick = () => invoer.value = invoer.value.slice(0, -1);
-      sleutelbord.appendChild(terug);
+      if (!volgorde || !Array.isArray(volgorde) || volgorde.length !== woordLys.length) {
+        volgorde = shuffleArray(woordLys);
+        index = 0;
+        localStorage.setItem("woordVolgorde", JSON.stringify(volgorde));
+        localStorage.setItem("woordVolgordeIndex", index.toString());
+      }
+
+      return { volgorde, index };
     }
 
-    function stuurRaaiskoot() {
-      const raai = invoer.value.toLowerCase();
-      if (raai.length !== 5) {
-        boodskap.textContent = "Woord moet 5 letters wees.";
-        return;
-      }
-
-      if (!woordLys.includes(raai)) {
-        boodskap.textContent = "Woord is nie in die lys nie.";
-        return;
-      }
-
-      if (pogings.length >= maksimumPogings) {
-        boodskap.textContent = "Jy is uit pogings!";
-        return;
-      }
-
-      pogings.push(raai);
-      werkBordOp();
-      invoer.value = "";
-      boodskap.textContent = "";
-
-      if (raai === teikenWoord) {
-        boodskap.textContent = "🎉 Reg geraai!";
-        stoorStats(true);
-      } else if (pogings.length === maksimumPogings) {
-        boodskap.textContent = "❌ Uit pogings! Die woord was: " + teikenWoord.toUpperCase();
-        stoorStats(false);
-      }
+    // Stoor die volgorde en indeks
+    function stoorWoordVolgorde(volgorde, index) {
+      localStorage.setItem("woordVolgorde", JSON.stringify(volgorde));
+      localStorage.setItem("woordVolgordeIndex", index.toString());
     }
 
-    function werkBordOp() {
-      const tegels = document.querySelectorAll(".tegel");
-      pogings.forEach((woord, ry) => {
-        for (let i = 0; i < 5; i++) {
-          const letter = woord[i];
-          const tegel = tegels[ry * 5 + i];
-          tegel.textContent = letter.toUpperCase();
-          if (letter === teikenWoord[i]) {
-            tegel.classList.add("korrek");
-            sleutelStatus[letter] = "korrek";
-          } else if (teikenWoord.includes(letter)) {
-            if (sleutelStatus[letter] !== "korrek") sleutelStatus[letter] = "gedeel";
-            tegel.classList.add("gedeel");
-          } else {
-            if (!sleutelStatus[letter]) sleutelStatus[letter] = "verkeerd";
-            tegel.classList.add("verkeerd");
-          }
+    // Kry vandag se woord gebaseer op datum
+    function kryVandagWoord() {
+      const vandag = new Date().toDateString();
+      const laasteDatum = localStorage.getItem("laasteSpeelDatum");
+      let { volgorde, index } = laaiWoordVolgorde();
+
+      if (laasteDatum !== vandag) {
+        // Nuwe dag, gaan na volgende woord
+        index++;
+        if (index >= volgorde.length) {
+          // As einde van lys, shuffle weer en begin van voor
+          volgorde = shuffleArray(woordLys);
+          index = 0;
         }
-      });
-      werkSleutelbord();
+        stoorWoordVolgorde(volgorde, index);
+        localStorage.setItem("laasteSpeelDatum", vandag);
+      }
+
+      return volgorde[index];
     }
 
-    function werkSleutelbord() {
-      for (const [letter, status] of Object.entries(sleutelStatus)) {
-        const knoppie = document.getElementById("sleutel-" + letter);
-        if (knoppie) {
-          knoppie.className = "sleutel " + status;
-        }
+    const teikenWoord = kryVandagWoord();
+
+    let pogings;
+    const vandagSleutel = new Date().toDateString();
+    const gestoorDatum = localStorage.getItem("woordPogingsDatum");
+
+    if (gestoorDatum !== vandagSleutel) {
+      // Nuwe dag – skoon begin
+      localStorage.removeItem("woordPogings");
+      localStorage.setItem("woordPogingsDatum", vandagSleutel);
+      pogings = [];
+    } else {
+      // Selfde dag – laai gestoorde pogings
+      pogings = JSON.parse(localStorage.getItem("woordPogings") || "[]");
+    }
+
+const bord = document.getElementById("bord");
+const invoer = document.getElementById("raad-invoer");
+const boodskap = document.getElementById("boodskap");
+const statsDiv = document.getElementById("statistiek");
+const sleutelbord = document.getElementById("sleutelbord");
+
+const letters = "qwertyuiopasdfghjklzxcvbnm";
+const sleutelStatus = {};
+
+function laaiBord() {
+  bord.innerHTML = "";
+  for (let i = 0; i < maksimumPogings * 5; i++) {
+    const tegel = document.createElement("div");
+    tegel.className = "tegel";
+    bord.appendChild(tegel);
+  }
+}
+
+function laaiSleutelbord() {
+  sleutelbord.innerHTML = "";
+  letters.split("").forEach(l => {
+    const knoppie = document.createElement("button");
+    knoppie.textContent = l;
+    knoppie.className = "sleutel";
+    knoppie.onclick = () => invoer.value += l;
+    knoppie.id = "sleutel-" + l;
+    sleutelbord.appendChild(knoppie);
+  });
+
+  const terug = document.createElement("button");
+  terug.textContent = "←";
+  terug.className = "sleutel";
+  terug.onclick = () => invoer.value = invoer.value.slice(0, -1);
+  sleutelbord.appendChild(terug);
+}
+
+function stuurRaaiskoot() {
+  if (reedsGespeelVandag) {
+    boodskap.textContent = "Jy het reeds vandag gespeel!";
+    return;
+  }
+  const raai = invoer.value.toLowerCase();
+  if (raai.length !== 5) {
+    boodskap.textContent = "Woord moet 5 letters wees.";
+    return;
+  }
+
+  if (!woordLys.includes(raai)) {
+    boodskap.textContent = "Woord is nie in die lys nie.";
+    return;
+  }
+
+  if (pogings.length >= maksimumPogings) {
+    boodskap.textContent = "Jy is uit pogings!";
+    return;
+  }
+
+  pogings.push(raai);
+  localStorage.setItem("woordPogings", JSON.stringify(pogings));
+  werkBordOp();
+  invoer.value = "";
+  boodskap.textContent = "";
+
+  if (raai === teikenWoord) {
+    boodskap.textContent = "🎉 Reg geraai!";
+    stoorStats(true);
+  } else if (pogings.length === maksimumPogings) {
+    boodskap.textContent = "❌ Uit pogings! Die woord was: " + teikenWoord.toUpperCase();
+    stoorStats(false);
+  }
+}
+
+function werkBordOp() {
+  const tegels = document.querySelectorAll(".tegel");
+
+  pogings.forEach((woord, ry) => {
+    const letterStatus = Array(5).fill("verkeerd");
+    const letterCount = {};
+
+    for (const l of teikenWoord) {
+      letterCount[l] = (letterCount[l] || 0) + 1;
+    }
+
+    for (let i = 0; i < 5; i++) {
+      if (woord[i] === teikenWoord[i]) {
+        letterStatus[i] = "korrek";
+        letterCount[woord[i]]--;
       }
     }
 
-    function stoorStats(wen) {
-      const datumSleutel = new Date().toDateString();
-      let stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-
-      if (!stats.laaste || stats.laaste !== datumSleutel) {
-        stats.gespeel = (stats.gespeel || 0) + 1;
-        if (wen) {
-          stats.wen = (stats.wen || 0) + 1;
-          stats.streek = (stats.streek || 0) + 1;
-        } else {
-          stats.streek = 0;
-        }
-        stats.laaste = datumSleutel;
-        localStorage.setItem("woordStats", JSON.stringify(stats));
+    for (let i = 0; i < 5; i++) {
+      if (letterStatus[i] === "korrek") continue;
+      if (teikenWoord.includes(woord[i]) && letterCount[woord[i]] > 0) {
+        letterStatus[i] = "gedeel";
+        letterCount[woord[i]]--;
       }
-
-      wysStats();
     }
 
-    function wysStats() {
-      const stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-      statsDiv.innerHTML = `
-        <p>Gespeel: ${stats.gespeel || 0}</p>
-        <p>Gewen: ${stats.wen || 0}</p>
-        <p>Streek: ${stats.streek || 0}</p>
-        <p>Laas gespeel: ${stats.laaste || "Nog nie"}</p>
-      `;
-    }
+    for (let i = 0; i < 5; i++) {
+      const letter = woord[i];
+      const tegel = tegels[ry * 5 + i];
+      tegel.textContent = letter.toUpperCase();
+      tegel.classList.add(letterStatus[i]);
 
-    function deelResultaat() {
-      let result = `Woord van die Dag – ${pogings.length}/${maksimumPogings}\n`;
-      pogings.forEach(woord => {
-        for (let i = 0; i < 5; i++) {
-          if (woord[i] === teikenWoord[i]) result += "🟩"; // green
-          else if (teikenWoord.includes(woord[i])) result += "🟨"; // yellow
-          else result += "⬛";
-        }
-        result += "\n";
-      });
-      navigator.clipboard.writeText(result);
-      alert("Resultaat gekopieer! Plak dit in WhatsApp of elders.");
+      if (letterStatus[i] === "korrek") {
+        sleutelStatus[letter] = "korrek";
+      } else if (letterStatus[i] === "gedeel" && sleutelStatus[letter] !== "korrek") {
+        sleutelStatus[letter] = "gedeel";
+      } else if (!sleutelStatus[letter]) {
+        sleutelStatus[letter] = "verkeerd";
+      }
     }
+  });
 
-    laaiBord();
-    wysStats();
-    laaiSleutelbord();
-  </script>
+  werkSleutelbord();
+}
+
+function werkSleutelbord() {
+  for (const [letter, status] of Object.entries(sleutelStatus)) {
+    const knoppie = document.getElementById("sleutel-" + letter);
+    if (knoppie) {
+      knoppie.className = "sleutel " + status;
+    }
+  }
+}
+
+function stoorStats(wen) {
+  const datumSleutel = new Date().toDateString();
+  let stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
+
+  if (!stats.laaste || stats.laaste !== datumSleutel) {
+    stats.gespeel = (stats.gespeel || 0) + 1;
+    if (wen) {
+      stats.wen = (stats.wen || 0) + 1;
+      stats.streek = (stats.streek || 0) + 1;
+
+      const pogingAantal = pogings.length;
+      stats.pogingTelling = stats.pogingTelling || {};
+      stats.pogingTelling[pogingAantal] = (stats.pogingTelling[pogingAantal] || 0) + 1;
+    } else {
+      stats.streek = 0;
+    }
+    stats.laaste = datumSleutel;
+    localStorage.setItem("woordStats", JSON.stringify(stats));
+  }
+
+  wysStats();
+}
+
+function wysStats() {
+  const stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
+  let pogingData = "";
+  if (stats.pogingTelling) {
+    pogingData = "<ul>";
+    Object.entries(stats.pogingTelling).forEach(([poging, keer]) => {
+      pogingData += `<li>${keer} keer gewen in ${poging} poging(s)</li>`;
+    });
+    pogingData += "</ul>";
+  }
+
+  statsDiv.innerHTML = `
+    <p>Gespeel: ${stats.gespeel || 0}</p>
+    <p>Gewen: ${stats.wen || 0}</p>
+    <p>Streek: ${stats.streek || 0}</p>
+    <p>Laas gespeel: ${stats.laaste || "Nog nie"}</p>
+    ${pogingData}
+  `;
+
+  const vandag = new Date().toDateString();
+  if (stats.laaste === vandag) {
+    reedsGespeelVandag = true;
+    invoer.disabled = true;
+    boodskap.textContent = "Jy het reeds vandag gespeel!";
+
+    const voerInKnoppie = document.querySelector('button[onclick="stuurRaaiskoot()"]');
+    if (voerInKnoppie) {
+      voerInKnoppie.disabled = true;
+    }
+  }
+}
+
+function deelResultaat() {
+  let result = `Woord van die Dag – ${pogings.length}/${maksimumPogings}\n`;
+  pogings.forEach(woord => {
+    for (let i = 0; i < 5; i++) {
+      if (woord[i] === teikenWoord[i]) result += "🟩";
+      else if (teikenWoord.includes(woord[i])) result += "🟨";
+      else result += "⬛";
+    }
+    result += "\n";
+  });
+  result += "\nSpeel hier: https://hanro55.github.io/WoordVirDieDag/index.html";
+
+  navigator.clipboard.writeText(result);
+  alert("Resultaat gekopieer! Plak dit in WhatsApp of elders.");
+}
+
+laaiBord();
+wysStats();
+laaiSleutelbord();
+werkBordOp();
+    
+</script>
+<section style="max-width:600px; margin:30px auto; padding:10px;">
+  <h2 style="text-align:center; font-family:sans-serif;">Kontakvorm</h2>
+  <iframe
+    src="https://docs.google.com/forms/d/e/1FAIpQLSd-AD5jz5QGziDojsHF2ILvAkt2oSWWfgvxuu0XBh-5mcbXjw/viewform?embedded=true"
+    width="100%"
+    height="1000"
+    frameborder="0"
+    marginheight="0"
+    marginwidth="0"
+    style="border:none; border-radius:8px;"
+  >
+    Loading…
+  </iframe>
+</section>
 </body>
 </html>
