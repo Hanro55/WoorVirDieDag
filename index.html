@@ -339,40 +339,34 @@ function deelResultaat() {
   alert("Resultaat gekopieer!");
 }
 
-function uitvoerStats() {
+
+// 📌 ✅ **Nuwe funksies: stats invoer/uitvoer via kode**
+function genereerStatsKode() {
   const stats = localStorage.getItem("woordStats");
   if (!stats) {
-    alert("Geen statistiek om uit te voer nie.");
+    alert("Geen statistiek beskikbaar nie.");
     return;
   }
-  const blob = new Blob([stats], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "woordStats.json";
-  a.click();
-  URL.revokeObjectURL(url);
+  const kode = btoa(stats); // JSON → base64
+  prompt("Jou stats-kode (kopieer en bêre):", kode);
 }
 
-function invoerStats(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (typeof data === "object" && data !== null && data.pogingTelling) {
-        localStorage.setItem("woordStats", JSON.stringify(data));
-        alert("Statistiek suksesvol ingevoer!");
-        wysStats();
-      } else {
-        alert("Ongeldige statistiek lêer.");
-      }
-    } catch (err) {
-      alert("Kon nie lêer lees nie: " + err.message);
+function laaiStatsVanKode() {
+  const kode = prompt("Voer stats-kode in:");
+  if (!kode) return;
+  try {
+    const json = atob(kode);
+    const data = JSON.parse(json);
+    if (typeof data === "object" && data !== null && data.pogingTelling) {
+      localStorage.setItem("woordStats", JSON.stringify(data));
+      alert("Statistiek suksesvol ingevoer!");
+      wysStats();
+    } else {
+      alert("Ongeldige stats-kode.");
     }
-  };
-  reader.readAsText(file);
+  } catch (e) {
+    alert("Fout met invoer: " + e.message);
+  }
 }
 
 // Laai alles
