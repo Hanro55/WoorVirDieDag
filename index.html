@@ -298,14 +298,19 @@ function stoorStats(wen) {
 
 function wysStats() {
   const stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-  let pogingData = "";
-  if (stats.pogingTelling) {
-    pogingData = "<ul>";
-    Object.entries(stats.pogingTelling).forEach(([poging, keer]) => {
-      pogingData += `<li>${keer} keer gewen in ${poging} poging(s)</li>`;
-    });
-    pogingData += "</ul>";
+  let pogingData = "<ul>";
+  
+  // Verseker stats.pogingTelling bestaan
+  stats.pogingTelling = stats.pogingTelling || {};
+
+  // Wys altyd 1–6 pogings, ook as dit 0 keer is
+  for (let i = 1; i <= 6; i++) {
+    const keer = stats.pogingTelling[i] || 0;
+    pogingData += `<li>${keer} keer gewen in ${i} poging(s)</li>`;
   }
+
+  pogingData += "</ul>";
+
   statsDiv.innerHTML = `
     <p>Gespeel: ${stats.gespeel || 0}</p>
     <p>Gewen: ${stats.wen || 0}</p>
@@ -313,6 +318,7 @@ function wysStats() {
     <p>Laas gespeel: ${stats.laaste || "Nog nie"}</p>
     ${pogingData}
   `;
+
   const vandag = new Date().toDateString();
   if (stats.laaste === vandag) {
     reedsGespeelVandag = true;
@@ -322,6 +328,7 @@ function wysStats() {
     if (voerInKnoppie) voerInKnoppie.disabled = true;
   }
 }
+
 
 function deelResultaat() {
   let result = `Woord van die Dag – ${pogings.length}/${maksimumPogings}\n`;
