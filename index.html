@@ -113,56 +113,42 @@
   <input type="file" id="importInput" style="display:none" onchange="invoerStats(event)" />
 </div>
 
-  <script>
+<script>
 let reedsGespeelVandag = false;
 
 const woordLys = [
   "awery", "awend", "avorm", "attar", "atoom", "atome", "atlas", "atjie", "aande", "aanhe"
-  // ... (jou volledige lys hier)
+  // ... jou volledige lys hier
 ];
 
 const maksimumPogings = 6;
 
-function shuffleArray(arr) {
+/** Pseudo-random generator met 'n seed gebaseer op datum **/
+function seededRandom(seed) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+/** Shuffle wat elke dag dieselfde volgorde gee vir almal **/
+function shuffleArraySeeded(arr, seed) {
   let a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
-function laaiWoordVolgorde() {
-  let volgorde = JSON.parse(localStorage.getItem("woordVolgorde") || "null");
-  let index = parseInt(localStorage.getItem("woordVolgordeIndex") || "0", 10);
-  if (!volgorde || !Array.isArray(volgorde) || volgorde.length !== woordLys.length) {
-    volgorde = shuffleArray(woordLys);
-    index = 0;
-    localStorage.setItem("woordVolgorde", JSON.stringify(volgorde));
-    localStorage.setItem("woordVolgordeIndex", index.toString());
-  }
-  return { volgorde, index };
-}
-
-function stoorWoordVolgorde(volgorde, index) {
-  localStorage.setItem("woordVolgorde", JSON.stringify(volgorde));
-  localStorage.setItem("woordVolgordeIndex", index.toString());
-}
-
+/** Kry vandag se woord: shuffle lys met seed gebaseer op datum, kies eerste **/
 function kryVandagWoord() {
-  const vandag = new Date().toDateString();
-  const laasteDatum = localStorage.getItem("laasteSpeelDatum");
-  let { volgorde, index } = laaiWoordVolgorde();
-  if (laasteDatum !== vandag) {
-    index++;
-    if (index >= volgorde.length) {
-      volgorde = shuffleArray(woordLys);
-      index = 0;
-    }
-    stoorWoordVolgorde(volgorde, index);
-    localStorage.setItem("laasteSpeelDatum", vandag);
+  const vandag = new Date();
+  const datumString = vandag.getFullYear() + "-" + (vandag.getMonth()+1) + "-" + vandag.getDate();
+  let seed = 0;
+  for (let i = 0; i < datumString.length; i++) {
+    seed += datumString.charCodeAt(i);
   }
-  return volgorde[index];
+  const geskommeldeLys = shuffleArraySeeded(woordLys, seed);
+  return geskommeldeLys[0];
 }
 
 const teikenWoord = kryVandagWoord();
@@ -349,38 +335,28 @@ function deelResultaat() {
     result += "\n";
   });
   result += "\nSpeel hier: https://jou-webwerf-url";
-
   navigator.clipboard.writeText(result);
   alert("Resultaat gekopieer!");
 }
 
-laaiBord();
-wysStats();
-laaiSleutelbord();
-werkBordOp();
-    
 function uitvoerStats() {
   const stats = localStorage.getItem("woordStats");
   if (!stats) {
     alert("Geen statistiek om uit te voer nie.");
     return;
   }
-
   const blob = new Blob([stats], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "woordStats.json";
   a.click();
-
   URL.revokeObjectURL(url);
 }
 
 function invoerStats(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
@@ -388,7 +364,7 @@ function invoerStats(event) {
       if (typeof data === "object" && data !== null && data.pogingTelling) {
         localStorage.setItem("woordStats", JSON.stringify(data));
         alert("Statistiek suksesvol ingevoer!");
-        wysStats(); // verfris op die bladsy
+        wysStats();
       } else {
         alert("Ongeldige statistiek lêer.");
       }
@@ -399,7 +375,13 @@ function invoerStats(event) {
   reader.readAsText(file);
 }
 
+// Laai alles
+laaiBord();
+wysStats();
+laaiSleutelbord();
+werkBordOp();
 </script>
+
 
 
 
