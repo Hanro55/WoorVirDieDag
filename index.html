@@ -107,6 +107,12 @@
 
   <div id="statistiek"></div>
 
+<div style="margin-top: 20px;">
+  <button onclick="uitvoerStats()">⬇️ Voer statistiek uit</button>
+  <button onclick="document.getElementById('importInput').click()">⬆️ Laai statistiek in</button>
+  <input type="file" id="importInput" style="display:none" onchange="invoerStats(event)" />
+</div>
+
   <script>
 let reedsGespeelVandag = false;
 
@@ -347,6 +353,47 @@ function deelResultaat() {
   navigator.clipboard.writeText(result);
   alert("Resultaat gekopieer!");
 }
+
+function uitvoerStats() {
+  const stats = localStorage.getItem("woordStats");
+  if (!stats) {
+    alert("Geen statistiek om uit te voer nie.");
+    return;
+  }
+
+  const blob = new Blob([stats], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "woordStats.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function invoerStats(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (typeof data === "object" && data !== null && data.pogingTelling) {
+        localStorage.setItem("woordStats", JSON.stringify(data));
+        alert("Statistiek suksesvol ingevoer!");
+        wysStats(); // verfris op die bladsy
+      } else {
+        alert("Ongeldige statistiek lêer.");
+      }
+    } catch (err) {
+      alert("Kon nie lêer lees nie: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
 
 laaiBord();
 wysStats();
