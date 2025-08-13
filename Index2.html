@@ -455,42 +455,25 @@
     laaiGrafiek(stats.pogingTelling);
   }
 
-  function laaiGrafiek(pogingTelling) {
-    const labels = Array.from({length:6}, (_,i)=> `${i+1} pogings`);
-    const data = labels.map((_,i)=> pogingTelling[i+1] || 0);
+function laaiGrafiek(pogingTelling) {
+  const labels = Array.from({length:6}, (_,i)=> `${i+1} pogings`);
+  const data = labels.map((_,i)=> pogingTelling[i+1] || 0);
 
-    // vernietig ou grafiek as hy bestaan
-    if (chartRef) { chartRef.destroy(); }
+  if (chartRef) chartRef.destroy();
 
-    chartRef = new Chart(grafiekCtx, {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          // Elke kolom 'n ander kleur; eerste drie pas by teëls
-          backgroundColor: [
-            '#22c55e', /* groen */
-            '#eab308', /* geel */
-            '#64748b', /* grys */
-            '#60a5fa', /* blou */
-            '#a78bfa', /* pers */
-            '#f472b6', /* pienk */
-            barThickness: 12
-          ]
-        }]
-      },
-      options: {
-        indexAxis: 'y',       // draai op sy sy
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, ticks: { precision: 0 } }
-        }
-      }
-    });
-  }
+  chartRef = new Chart(grafiekCtx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: '#3b82f6', barThickness: 12 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
 
   // Deel poging met blokkies 🟩🟨⬜
 function deelResultaat() {
