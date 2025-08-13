@@ -475,7 +475,8 @@
             '#64748b', /* grys */
             '#60a5fa', /* blou */
             '#a78bfa', /* pers */
-            '#f472b6'  /* pienk */
+            '#f472b6', /* pienk */
+            barThickness: 12
           ]
         }]
       },
@@ -491,20 +492,27 @@
     });
   }
 
-  // Deel poging – wys korrekte letters as HOOF, gedeel as klein, ander as _
-  function deelResultaat() {
-    let result = `Woord van die Dag 🇿🇦 – ${pogings.length}/${maksimumPogings}\n`;
-    pogings.forEach(woord => {
-      for (let i = 0; i < 5; i++) {
-        if (woord[i] === teikenWoord[i]) result += woord[i].toUpperCase();
-        else if (teikenWoord.includes(woord[i])) result += woord[i].toLowerCase();
-        else result += "_";
-      }
-      result += "\n";
-    });
-    navigator.clipboard.writeText(result);
-    alert("Resultaat gekopieer!");
+  // Deel poging met blokkies 🟩🟨⬜
+function deelResultaat() {
+  if (pogings.length === 0) {
+    alert("Geen poging om te deel nie!");
+    return;
   }
+
+  let result = `Woord van die Dag 🇿🇦 – ${pogings.length}/${maksimumPogings}\n`;
+
+  pogings.forEach(woord => {
+    let line = "";
+    for (let i = 0; i < 5; i++) {
+      if (woord[i] === teikenWoord[i]) line += "🟩";
+      else if (teikenWoord.includes(woord[i])) line += "🟨";
+      else line += "⬜";
+    }
+    result += line + "\n";
+  });
+
+  navigator.clipboard.writeText(result).then(() => alert("Resultaat gekopieer!"));
+}
 
   // Stats uitvoer/invoer via base64 (soos jou oorspronklike)
   function uitvoerStats() {
