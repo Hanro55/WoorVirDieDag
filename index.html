@@ -40,13 +40,29 @@
     .gedeel { background-color: #c9b458; color: white; border: none; }
     .verkeerd  { background-color: #787c7e; color: white; border: none; }
 
-    input {
-      font-size: 1.2em;
-      padding: 10px;
-      text-transform: uppercase;
-      width: 140px;
-      max-width: 80%;
+    #invoer-blokkies {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px auto;
+      max-width: 300px;
     }
+
+    .invoer-tegel {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 2px solid #999;
+      font-size: 1.8em;
+      text-transform: uppercase;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      border-radius: 8px;
+      color: #111;
+    }
+
 
     button {
       padding: 10px 20px;
@@ -69,6 +85,8 @@
       color: #555;
     }
 
+    #grafiek-container { max-width: 400px; margin: 20px auto; }
+    
     #sleutelbord {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
@@ -96,8 +114,7 @@
   <h1>Woord van die Dag</h1>
   <div id="bord"></div>
 
-  <input id="raad-invoer" maxlength="5" placeholder="Tik 'n woord" autofocus />
-  <br />
+div id="invoer-blokkies"></div>
   <button onclick="stuurRaaiskoot()">Voer in</button>
   <div id="boodskap"></div>
 
@@ -112,7 +129,11 @@
   <button onclick="invoerStats()">⬆️ Laai statistiek in</button>
   <input type="file" id="importInput" style="display:none" onchange="invoerStats(event)" />
 </div>
-
+<div id="statistiek">
+    <h2>Statistiek</h2>
+    <div id="grafiek-container">
+      <canvas id="pogingGrafiek"></canvas>
+    </div>
 <script>
 let reedsGespeelVandag = false;
 
@@ -166,14 +187,14 @@ if (gestoorDatum !== vandagSleutel) {
 }
 
 const bord = document.getElementById("bord");
-const invoer = document.getElementById("raad-invoer");
+const invoerBlokkies = document.getElementById("invoer-blokkies");
 const boodskap = document.getElementById("boodskap");
 const statsDiv = document.getElementById("statistiek");
 const sleutelbord = document.getElementById("sleutelbord");
-
 const letters = "qwertyuiopasdfghjklzxcvbnm";
 const sleutelStatus = {};
-
+let huidigeInvoer = "";
+  
 function laaiBord() {
   bord.innerHTML = "";
   for (let i = 0; i < maksimumPogings * 5; i++) {
@@ -198,6 +219,40 @@ function laaiSleutelbord() {
   terug.className = "sleutel";
   terug.onclick = () => invoer.value = invoer.value.slice(0, -1);
   sleutelbord.appendChild(terug);
+}
+
+  function tipeLetter(l) {
+  if (huidigeInvoer.length < 5 && !reedsGespeelVandag) {
+    huidigeInvoer += l;
+    laaiInvoerBlokkies();
+  }
+}
+function tipeTerug() {
+  if (!reedsGespeelVandag) {
+    huidigeInvoer = huidigeInvoer.slice(0, -1);
+    laaiInvoerBlokkies();
+  }
+}
+
+function laaiInvoerBlokkies() {
+  invoerBlokkies.innerHTML = "";
+  for (let i = 0; i < 5; i++) {
+    const b = document.createElement("div");
+    b.className = "tegel invoer-tegel";
+    if (huidigeInvoer[i]) b.textContent = huidigeInvoer[i].toUpperCase();
+    invoerBlokkies.appendChild(b);
+  }
+  valideerWoord();
+}
+
+function valideerWoord() {
+  const blokkies = document.querySelectorAll(".invoer-tegel");
+  const woord = huidigeInvoer.toLowerCase();
+  if (woord.length === 5 && !woordLys.includes(woord)) {
+    blokkies.forEach(b => b.style.color = "red");
+  } else {
+    blokkies.forEach(b => b.style.color = "#111");
+  }
 }
 
 function stuurRaaiskoot() {
@@ -327,12 +382,16 @@ function wysStats() {
 function deelResultaat() {
   let result = `Woord van die Dag – ${pogings.length}/${maksimumPogings}\n`;
   pogings.forEach(woord => {
+    const letterStatus = Array(5).fill("⬛");
+    const letterCount = {};
+    for (const l of teikenWoord) letterCount[l] = (letterCount[l] || 0) + 1;
+    for (let i = 0; i < 5; i++)
+      if (woord[i] === teikenWoord[i]) { letterStatus[i] = "🟩"; letterCount[woord[i]]--; }
     for (let i = 0; i < 5; i++) {
-      if (woord[i] === teikenWoord[i]) result += "🟩";
-      else if (teikenWoord.includes(woord[i])) result += "🟨";
-      else result += "⬛";
+      if (letterStatus[i] === "🟩") continue;
+      if (teikenWoord.includes(woord[i]) && letterCount[woord[i]] > 0) { letterStatus[i] = "🟨"; letterCount[woord[i]]--; }
     }
-    result += "\n";
+    result += letterStatus.join("") + "\n";
   });
   result += "\nSpeel hier: https://jou-webwerf-url";
   navigator.clipboard.writeText(result);
@@ -373,6 +432,7 @@ function invoerStats() {
 laaiBord();
 wysStats();
 laaiSleutelbord();
+laaiInvoerBlokkies();  
 werkBordOp();
 </script>
 
