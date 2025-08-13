@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root{
-      --groen:#22c55e;   /* korrek */
-      --geel:#eab308;    /* gedeel */
-      --grys:#64748b;    /* verkeerd */
+      --groen:#22c55e;
+      --geel:#eab308;
+      --grys:#64748b;
       --rand:#94a3b8;
-      --prim:#3b82f6;    /* knoppies */
+      --prim:#3b82f6;
       --bg:#f8fafc;
       --txt:#222;
     }
@@ -24,7 +24,6 @@
     }
     h1 { color: #334155; margin: 10px 0 0; }
 
-    /* Bord */
     #bord {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -52,7 +51,6 @@
     .verkeerd{ background-color: var(--grys);  color: white; border: none; }
     .ongeldig{ color: red; border-color: red; }
 
-    /* Invoer & knoppies */
     #invoerblok { display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap: wrap; }
     input#raad-invoer {
       font-size: 1.2em;
@@ -80,7 +78,6 @@
       min-height: 1.2em;
     }
 
-    /* Sleutelbord */
     #sleutelbord {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
@@ -101,7 +98,6 @@
     .sleutel.gedeel  { background: var(--geel);  color: #fff; }
     .sleutel.verkeerd{ background: var(--grys);  color: #fff; }
 
-    /* Stats + Grafiek blok */
     #stat-grafiek-wrap {
       display: flex;
       justify-content: center;
@@ -134,10 +130,8 @@
     #grafiek-kas h3 { margin: 0 0 8px; color:#334155; text-align:left; }
     #grafiek { width: 100%; height: 10px; }
 
-    /* Onderste knoppies */
     #onder-knoppies { margin-top: 8px; display:flex; gap:8px; justify-content:center; flex-wrap: wrap; }
 
-    /* Google Vorm */
     #vorm-seksie {
       max-width: 640px;
       margin: 28px auto 10px;
@@ -152,7 +146,6 @@
       background: #fff;
     }
 
-    /* Responsief */
     @media (max-width: 420px){
       .tegel{ font-size: 1.5em; }
       #grafiek{ height: 220px; }
@@ -195,359 +188,169 @@
     </div>
   </div>
 
-  <!-- Chart.js vir grafiek -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <script>
   let reedsGespeelVandag = false;
-
-  const woordLys = [
-    "awery", "awend", "avorm", "attar", "atoom", "atome", "atlas", "atjie", "aande"
-  ];
+  const woordLys = ["awery","awend","avorm","attar","atoom","atome","atlas","atjie","aande"];
   const maksimumPogings = 6;
 
-  /** Pseudo-random generator met 'n seed gebaseer op datum **/
-  function seededRandom(seed) {
-    let x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
+  function seededRandom(seed){let x=Math.sin(seed)*10000;return x-Math.floor(x);}
+  function shuffleArraySeeded(arr,seed){let a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(seededRandom(seed+i)*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+  function kryVandagWoord(){
+    const v=new Date();
+    const s=v.getFullYear()+"-"+(v.getMonth()+1)+"-"+v.getDate();
+    let seed=0;for(let i=0;i<s.length;i++)seed+=s.charCodeAt(i);
+    return shuffleArraySeeded(woordLys,seed)[0];
   }
-  /** Shuffle wat elke dag dieselfde volgorde gee vir almal **/
-  function shuffleArraySeeded(arr, seed) {
-    let a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(seededRandom(seed + i) * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
-  /** Vandag se woord **/
-  function kryVandagWoord() {
-    const v = new Date();
-    const s = v.getFullYear() + "-" + (v.getMonth()+1) + "-" + v.getDate();
-    let seed = 0;
-    for (let i = 0; i < s.length; i++) seed += s.charCodeAt(i);
-    return shuffleArraySeeded(woordLys, seed)[0];
-  }
-
   const teikenWoord = kryVandagWoord();
 
-  // Pogings-stoor
   let pogings;
   const vandagSleutel = new Date().toDateString();
-  if (localStorage.getItem("woordPogingsDatum") !== vandagSleutel) {
-    localStorage.removeItem("woordPogings");
-    localStorage.setItem("woordPogingsDatum", vandagSleutel);
-    pogings = [];
-  } else {
-    pogings = JSON.parse(localStorage.getItem("woordPogings") || "[]");
+  if(localStorage.getItem("woordPogingsDatum")!==vandagSleutel){localStorage.removeItem("woordPogings"); localStorage.setItem("woordPogingsDatum", vandagSleutel); pogings=[];} 
+  else {pogings=JSON.parse(localStorage.getItem("woordPogings")||"[]");}
+
+  const bord=document.getElementById("bord");
+  const invoer=document.getElementById("raad-invoer");
+  const boodskap=document.getElementById("boodskap");
+  const sleutelbord=document.getElementById("sleutelbord");
+  const letters="qwertyuiopasdfghjklzxcvbnm";
+  const sleutelStatus={};
+
+  const sGespeel=document.getElementById("s-gespeel");
+  const sGewon=document.getElementById("s-gewon");
+  const sStreek=document.getElementById("s-streek");
+  const sLaas=document.getElementById("s-laas");
+  const sVerdeling=document.getElementById("s-verdeling");
+
+  let chartRef=null;
+  const grafiekCtx=document.getElementById("grafiek").getContext("2d");
+
+  function laaiBord(){bord.innerHTML=""; for(let i=0;i<maksimumPogings*5;i++){const t=document.createElement("div"); t.className="tegel"; bord.appendChild(t);}}
+  function laaiSleutelbord(){
+    sleutelbord.innerHTML="";
+    letters.split("").forEach(l=>{const k=document.createElement("button");k.textContent=l;k.className="sleutel";k.onclick=()=>{if(invoer.value.length<5){invoer.value+=l;updateLive();}}; k.id="sleutel-"+l; sleutelbord.appendChild(k);});
+    const terug=document.createElement("button"); terug.textContent="←"; terug.className="sleutel"; terug.onclick=()=>{invoer.value=invoer.value.slice(0,-1); updateLive();}; sleutelbord.appendChild(terug);
   }
 
-  const bord = document.getElementById("bord");
-  const invoer = document.getElementById("raad-invoer");
-  const boodskap = document.getElementById("boodskap");
-  const sleutelbord = document.getElementById("sleutelbord");
-  const letters = "qwertyuiopasdfghjklzxcvbnm";
-  const sleutelStatus = {};
-
-  // Stats DOM
-  const sGespeel = document.getElementById("s-gespeel");
-  const sGewon  = document.getElementById("s-gewon");
-  const sStreek = document.getElementById("s-streek");
-  const sLaas   = document.getElementById("s-laas");
-  const sVerdeling = document.getElementById("s-verdeling");
-
-  // Grafiek
-  let chartRef = null;
-  const grafiekCtx = document.getElementById("grafiek").getContext("2d");
-
-  /* UI bou */
-  function laaiBord() {
-    bord.innerHTML = "";
-    for (let i = 0; i < maksimumPogings * 5; i++) {
-      const tegel = document.createElement("div");
-      tegel.className = "tegel";
-      bord.appendChild(tegel);
-    }
-  }
-
-  function laaiSleutelbord() {
-    sleutelbord.innerHTML = "";
-    letters.split("").forEach(l => {
-      const knoppie = document.createElement("button");
-      knoppie.textContent = l;
-      knoppie.className = "sleutel";
-      knoppie.onclick = () => {
-        if (invoer.value.length < 5) {
-          invoer.value += l;
-          updateLive();
-        }
-      };
-      knoppie.id = "sleutel-" + l;
-      sleutelbord.appendChild(knoppie);
-    });
-    const terug = document.createElement("button");
-    terug.textContent = "←";
-    terug.className = "sleutel";
-    terug.onclick = () => { invoer.value = invoer.value.slice(0, -1); updateLive(); };
-    sleutelbord.appendChild(terug);
-  }
-
-  // Live intik in huidige ry + rooi as ongeldig
-  function updateLive() {
-    const tegels = document.querySelectorAll(".tegel");
-    const rowIndex = pogings.length;
-    let woord = invoer.value.toLowerCase();
-
-    for (let i = 0; i < 5; i++) {
-      const idx = rowIndex * 5 + i;
-      const t = tegels[idx];
-      t.className = "tegel"; // reset
-      t.textContent = woord[i] ? woord[i].toUpperCase() : "";
-      if (woord && !woordLys.includes(woord) && woord[i]) {
-        t.classList.add("ongeldig");
-      }
-      if (woord[i]) {
-        t.classList.add("pop");
-        setTimeout(() => t.classList.remove("pop"), 90);
-      }
+  function updateLive(){
+    const tegels=document.querySelectorAll(".tegel");
+    const rowIndex=pogings.length;
+    let woord=invoer.value.toLowerCase();
+    for(let i=0;i<5;i++){
+      const idx=rowIndex*5+i;
+      const t=tegels[idx];
+      t.className="tegel";
+      t.textContent=woord[i]?woord[i].toUpperCase():"";
+      if(woord&&!woordLys.includes(woord)&&woord[i])t.classList.add("ongeldig");
+      if(woord[i]){t.classList.add("pop"); setTimeout(()=>t.classList.remove("pop"),90);}
     }
   }
 
-  // Verwerking van raaiskoot
-  function stuurRaaiskoot() {
-    if (reedsGespeelVandag) {
-      boodskap.textContent = "Jy het reeds vandag gespeel!";
-      return;
-    }
-    const raai = invoer.value.toLowerCase();
-    if (raai.length !== 5) {
-      boodskap.textContent = "Woord moet 5 letters wees.";
-      return;
-    }
-    if (!woordLys.includes(raai)) {
-      boodskap.textContent = "Woord is nie in die lys nie.";
-      // laat rooi bly deur updateLive te roep
-      updateLive();
-      return;
-    }
-    if (pogings.length >= maksimumPogings) {
-      boodskap.textContent = "Jy is uit pogings!";
-      return;
-    }
+  function stuurRaaiskoot(){
+    if(reedsGespeelVandag){boodskap.textContent="Jy het reeds vandag gespeel!"; return;}
+    const raai=invoer.value.toLowerCase();
+    if(raai.length!==5){boodskap.textContent="Woord moet 5 letters wees."; return;}
+    if(!woordLys.includes(raai)){boodskap.textContent="Woord is nie in die lys nie."; updateLive(); return;}
+    if(pogings.length>=maksimumPogings){boodskap.textContent="Jy is uit pogings!"; return;}
 
     pogings.push(raai);
-    localStorage.setItem("woordPogings", JSON.stringify(pogings));
+    localStorage.setItem("woordPogings",JSON.stringify(pogings));
     werkBordOp();
-    invoer.value = "";
-    boodskap.textContent = "";
+    invoer.value="";
+    boodskap.textContent="";
 
-    if (raai === teikenWoord) {
-      boodskap.textContent = "🎉 Reg geraai!";
-      stoorStats(true);
-    } else if (pogings.length === maksimumPogings) {
-      boodskap.textContent = "❌ Uit pogings! Die woord was: " + teikenWoord.toUpperCase();
-      stoorStats(false);
-    } else {
-      // aktiveer nuwe ry se live view
-      updateLive();
-    }
+    if(raai===teikenWoord){boodskap.textContent="🎉 Reg geraai!"; stoorStats(true);}
+    else if(pogings.length===maksimumPogings){boodskap.textContent="❌ Uit pogings! Die woord was: "+teikenWoord.toUpperCase(); stoorStats(false);}
+    else updateLive();
   }
 
-  // Kleur logika met letter-count (geen ekstra geel/duplikaat)
-  function werkBordOp() {
-    const tegels = document.querySelectorAll(".tegel");
-    pogings.forEach((woord, ry) => {
-      const letterStatus = Array(5).fill("verkeerd");
-      const letterCount = {};
-      for (const l of teikenWoord) letterCount[l] = (letterCount[l] || 0) + 1;
+  function werkBordOp(){
+    const tegels=document.querySelectorAll(".tegel");
+    pogings.forEach((woord,ry)=>{
+      const letterStatus=Array(5).fill("verkeerd");
+      const letterCount={}; for(const l of teikenWoord) letterCount[l]=(letterCount[l]||0)+1;
 
-      // eers korrek
-      for (let i = 0; i < 5; i++) {
-        if (woord[i] === teikenWoord[i]) {
-          letterStatus[i] = "korrek";
-          letterCount[woord[i]]--;
-        }
-      }
-      // dan gedeel
-      for (let i = 0; i < 5; i++) {
-        if (letterStatus[i] === "korrek") continue;
-        if (teikenWoord.includes(woord[i]) && letterCount[woord[i]] > 0) {
-          letterStatus[i] = "gedeel";
-          letterCount[woord[i]]--;
-        }
-      }
-      // teken
-      for (let i = 0; i < 5; i++) {
-        const letter = woord[i];
-        const tegel = tegels[ry * 5 + i];
-        tegel.textContent = letter.toUpperCase();
-        tegel.className = "tegel " + letterStatus[i];
-
-        if (letterStatus[i] === "korrek") {
-          sleutelStatus[letter] = "korrek";
-        } else if (letterStatus[i] === "gedeel" && sleutelStatus[letter] !== "korrek") {
-          sleutelStatus[letter] = "gedeel";
-        } else if (!sleutelStatus[letter]) {
-          sleutelStatus[letter] = "verkeerd";
-        }
+      for(let i=0;i<5;i++){if(woord[i]===teikenWoord[i]){letterStatus[i]="korrek"; letterCount[woord[i]]--;}}
+      for(let i=0;i<5;i++){if(letterStatus[i]==="korrek")continue; if(teikenWoord.includes(woord[i])&&letterCount[woord[i]]>0){letterStatus[i]="gedeel"; letterCount[woord[i]]--;}}
+      for(let i=0;i<5;i++){
+        const letter=woord[i];
+        const tegel=tegels[ry*5+i];
+        tegel.textContent=letter.toUpperCase();
+        tegel.className="tegel "+letterStatus[i];
+        if(letterStatus[i]==="korrek") sleutelStatus[letter]="korrek";
+        else if(letterStatus[i]==="gedeel" && sleutelStatus[letter]!=="korrek") sleutelStatus[letter]="gedeel";
+        else if(!sleutelStatus[letter]) sleutelStatus[letter]="verkeerd";
       }
     });
     werkSleutelbord();
   }
 
-  function werkSleutelbord() {
-    for (const [letter, status] of Object.entries(sleutelStatus)) {
-      const knoppie = document.getElementById("sleutel-" + letter);
-      if (knoppie) knoppie.className = "sleutel " + status;
-    }
-  }
+  function werkSleutelbord(){for(const [l,s] of Object.entries(sleutelStatus)){const k=document.getElementById("sleutel-"+l); if(k) k.className="sleutel "+s;}}
 
-  // Stats berg + wys
-  function stoorStats(wen) {
-    const datumSleutel = new Date().toDateString();
-    let stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-    if (!stats.pogingTelling) stats.pogingTelling = {};
+  function stoorStats(wen){
+    const datumSleutel=new Date().toDateString();
+    let stats=JSON.parse(localStorage.getItem("woordStats")||"{}");
+    if(!stats.pogingTelling) stats.pogingTelling={};
 
-    if (!stats.laaste || stats.laaste !== datumSleutel) {
-      stats.gespeel = (stats.gespeel || 0) + 1;
-      if (wen) {
-        stats.wen = (stats.wen || 0) + 1;
-        stats.streek = (stats.streek || 0) + 1;
-        const pogingAantal = pogings.length;
-        stats.pogingTelling[pogingAantal] = (stats.pogingTelling[pogingAantal] || 0) + 1;
-      } else {
-        stats.streek = 0;
-      }
-      stats.laaste = datumSleutel;
-      localStorage.setItem("woordStats", JSON.stringify(stats));
+    if(!stats.laaste || stats.laaste!==datumSleutel){
+      stats.gespeel=(stats.gespeel||0)+1;
+      if(wen){stats.wen=(stats.wen||0)+1; stats.streek=(stats.streek||0)+1; stats.pogingTelling[pogings.length]=(stats.pogingTelling[pogings.length]||0)+1;}
+      else stats.streek=0;
+      stats.laaste=datumSleutel;
+      localStorage.setItem("woordStats",JSON.stringify(stats));
     }
     wysStats();
   }
 
-  function wysStats() {
-    const stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-    stats.pogingTelling = stats.pogingTelling || {};
+  function wysStats(){
+    const stats=JSON.parse(localStorage.getItem("woordStats")||"{}");
+    stats.pogingTelling=stats.pogingTelling||{};
+    sGespeel.textContent=stats.gespeel||0;
+    sGewon.textContent=stats.wen||0;
+    sStreek.textContent=stats.streek||0;
+    sLaas.textContent=stats.laaste||"Nog nie";
 
-    sGespeel.textContent = stats.gespeel || 0;
-    sGewon.textContent   = stats.wen || 0;
-    sStreek.textContent  = stats.streek || 0;
-    sLaas.textContent    = stats.laaste || "Nog nie";
+    let pogingData="<ul>";
+    for(let i=1;i<=6;i++){const keer=stats.pogingTelling[i]||0; pogingData+=`<li>${keer} keer gewen in ${i} poging(s)</li>`;}
+    pogingData+="</ul>";
+    sVerdeling.innerHTML=pogingData;
 
-    // Lys "X keer gewen in Y poging(s)"
-    let pogingData = "<ul>";
-    for (let i = 1; i <= 6; i++) {
-      const keer = stats.pogingTelling[i] || 0;
-      pogingData += `<li>${keer} keer gewen in ${i} poging(s)</li>`;
-    }
-    pogingData += "</ul>";
-    sVerdeling.innerHTML = pogingData;
+    const vandag=new Date().toDateString();
+    if(stats.laaste===vandag){reedsGespeelVandag=true; invoer.disabled=true; const kn=document.querySelector('button[onclick="stuurRaaiskoot()"]'); if(kn) kn.disabled=true;}
 
-    // Dag reeds gespeel lock
-    const vandag = new Date().toDateString();
-    if (stats.laaste === vandag) {
-      reedsGespeelVandag = true;
-      invoer.disabled = true;
-      const voerInKnoppie = document.querySelector('button[onclick="stuurRaaiskoot()"]');
-      if (voerInKnoppie) voerInKnoppie.disabled = true;
-    }
-
-    // Grafiek op sy sy (horizontale stawe)
     laaiGrafiek(stats.pogingTelling);
   }
 
-function laaiGrafiek(pogingTelling) {
-  const labels = Array.from({length:6}, (_,i)=> `${i+1} pogings`);
-  const data = labels.map((_,i)=> pogingTelling[i+1] || 0);
-
-  if (chartRef) chartRef.destroy();
-
-  chartRef = new Chart(grafiekCtx, {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: '#3b82f6', barThickness: 12 }] },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
-    }
-  });
-}
-
-
-  // Deel poging met blokkies 🟩🟨⬜
-function deelResultaat() {
-  if (pogings.length === 0) {
-    alert("Geen poging om te deel nie!");
-    return;
+  function laaiGrafiek(pogingTelling){
+    const labels=Array.from({length:6},(_,i)=>`${i+1} pogings`);
+    const data=labels.map((_,i)=>pogingTelling[i+1]||0);
+    if(chartRef) chartRef.destroy();
+    chartRef=new Chart(grafiekCtx,{
+      type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:'#3b82f6',barThickness:12}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{precision:0}}}}
+    });
   }
 
-  let result = `Woord van die Dag 🇿🇦 – ${pogings.length}/${maksimumPogings}\n`;
-
-  pogings.forEach(woord => {
-    let line = "";
-    for (let i = 0; i < 5; i++) {
-      if (woord[i] === teikenWoord[i]) line += "🟩";
-      else if (teikenWoord.includes(woord[i])) line += "🟨";
-      else line += "⬜";
-    }
-    result += line + "\n";
-  });
-
-  navigator.clipboard.writeText(result).then(() => alert("Resultaat gekopieer!"));
-}
-
-  // Stats uitvoer/invoer via base64 (soos jou oorspronklike)
-  function uitvoerStats() {
-    const stats = localStorage.getItem("woordStats");
-    if (!stats) { alert("Geen statistiek beskikbaar nie."); return; }
-    const kode = btoa(stats);
-    prompt("Jou stats-kode (kopieer en bêre):", kode);
-  }
-  function invoerStats() {
-    const kode = prompt("Voer stats-kode in:");
-    if (!kode) return;
-    try {
-      const json = atob(kode);
-      const data = JSON.parse(json);
-      if (typeof data === "object" && data !== null && data.pogingTelling) {
-        localStorage.setItem("woordStats", JSON.stringify(data));
-        alert("Statistiek suksesvol ingevoer!");
-        wysStats();
-      } else {
-        alert("Ongeldige stats-kode.");
+  function deelResultaat(){
+    if(pogings.length===0){alert("Geen poging om te deel nie!"); return;}
+    let result=`Woord van die Dag 🇿🇦 – ${pogings.length}/${maksimumPogings}\n`;
+    pogings.forEach(woord=>{
+      let line="";
+      for(let i=0;i<5;i++){
+        if(woord[i]===teikenWoord[i]) line+="🟩";
+        else if(teikenWoord.includes(woord[i])) line+="🟨";
+        else line+="⬜";
       }
-    } catch (e) {
-      alert("Fout met invoer: " + e.message);
-    }
+      result+=line+"\n";
+    });
+    navigator.clipboard.writeText(result).then(()=>alert("Resultaat gekopieer!"));
   }
 
-  // Inits
-  laaiBord();
-  laaiSleutelbord();
-  wysStats();
-  werkBordOp();
-  updateLive();
+  function uitvoerStats(){const stats=localStorage.getItem("woordStats"); if(!stats){alert("Geen statistiek beskikbaar nie."); return;} prompt("Jou stats-kode (kopieer en bêre):",btoa(stats));}
+  function invoerStats(){const kode=prompt("Voer stats-kode in:"); if(!kode) return; try{const data=JSON.parse(atob(kode)); if(typeof data==="object"&&data!==null&&data.pogingTelling){localStorage.setItem("woordStats",JSON.stringify(data)); alert("Statistiek suksesvol ingevoer!"); wysStats();} else alert("Ongeldige stats-kode.");}catch(e){alert("Fout met invoer: "+e.message);}}
 
-  // Event: live intik
-  invoer.addEventListener("input", updateLive);
-
-  // Enter-stuur
-  document.addEventListener("keydown", (e)=>{
-    if (e.key === "Enter") stuurRaaiskoot();
-  });
+  laaiBord(); laaiSleutelbord(); wysStats(); updateLive();
   </script>
-
-  <!-- Google Vorm (bly dieselfde as jou oorspronklike) -->
-  <section id="vorm-seksie">
-    <h2>Kontakvorm</h2>
-    <iframe
-      src="https://docs.google.com/forms/d/e/1FAIpQLSd-AD5jz5QGziDojsHF2ILvAkt2oSWWfgvxuu0XBh-5mcbXjw/viewform?embedded=true"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      allowfullscreen>
-    </iframe>
-  </section>
 </body>
 </html>
-
