@@ -2,260 +2,200 @@
 <html lang="af">
 <head>
   <meta charset="UTF-8" />
-  <title>Woord van die Dag</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Woord Speletjie</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
       text-align: center;
-      background: #f3f4f6;
       margin: 0;
       padding: 20px;
     }
 
-    h1 { color: #333; }
+    h1 {
+      color: #333;
+    }
 
-    #bord {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-      max-width: 300px;
+    #game {
       margin: 20px auto;
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      grid-gap: 10px;
+      width: max-content;
     }
 
-    .tegel {
-      width: 100%;
-      aspect-ratio: 1;
-      border: 2px solid #ccc;
-      font-size: 1.8em;
-      text-transform: uppercase;
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .tile {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #aaa;
+      font-size: 24px;
       font-weight: bold;
+      text-transform: uppercase;
+      text-align: center;
       border-radius: 10px;
+      background-color: white;
     }
 
-    .korrek { background-color: #6aaa64; color: white; border: none; }
-    .gedeel { background-color: #c9b458; color: white; border: none; }
-    .verkeerd  { background-color: #787c7e; color: white; border: none; }
-
-    #invoer-blokkies {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 10px auto;
-      max-width: 300px;
-    }
-
-    .invoer-tegel {
-      width: 100%;
-      aspect-ratio: 1;
-      border: 2px solid #999;
-      font-size: 1.8em;
-      text-transform: uppercase;
-      background: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      border-radius: 50%; /* maak sirkelvorm */
-      color: #111;
+    #controls {
+      margin-top: 20px;
     }
 
     button {
       padding: 10px 20px;
-      font-size: 1em;
-      margin-top: 10px;
-      background-color: #6aaa64;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      border: none;
+      background-color: #4CAF50;
       color: white;
-      border: none;
-      border-radius: 5px;
     }
 
-    #boodskap {
+    #message {
+      margin-top: 15px;
       font-weight: bold;
-      margin: 10px;
     }
 
-    #statistiek {
-      margin-top: 20px;
-      font-size: 14px;
-      color: #555;
+    #stats {
+      margin-top: 40px;
     }
 
-    #grafiek-container {
+    #chart {
       max-width: 400px;
-      margin: 20px auto;
+      margin: 0 auto;
     }
-
-    #sleutelbord {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 5px;
-      max-width: 400px;
-      margin: 20px auto;
-    }
-
-    .sleutel {
-      padding: 10px;
-      background: #ddd;
-      border: none;
-      font-weight: bold;
-      border-radius: 5px;
-      font-size: 1em;
-      text-transform: uppercase;
-    }
-
-    .sleutel.korrek { background: #6aaa64; color: white; }
-    .sleutel.gedeel { background: #c9b458; color: white; }
-    .sleutel.verkeerd { background: #787c7e; color: white; }
   </style>
 </head>
 <body>
-  <h1>Woord van die Dag</h1>
 
-  <div id="bord"></div>
-  <div id="invoer-blokkies"></div>
-  <button onclick="stuurRaaiskoot()">Voer in</button>
-  <div id="boodskap"></div>
+  <h1>Woord Speletjie</h1>
 
-  <div id="sleutelbord"></div>
-  <button onclick="deelResultaat()">📤 Deel jou poging</button>
+  <div id="game"></div>
 
-  <div id="statistiek">
-    <h2>Statistiek</h2>
-    <div id="grafiek-container">
-      <canvas id="pogingGrafiek" width="400" height="300"></canvas>
-    </div>
-    <div id="statsDetails"></div>
+  <div id="controls">
+    <button onclick="checkWord()">Voer in</button>
   </div>
 
+  <div id="message"></div>
+
+  <div id="stats">
+    <h2>Statistiek</h2>
+    <canvas id="chart" width="400" height="300"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const woordLys = ["awery", "awend", "avorm", "attar", "atoom", "atome", "atlas", "atjie", "aande", "aanhe"];
-    const maksimumPogings = 6;
+    const wordList = ["blaar", "appel", "water", "kroon", "vloer"];
+    let currentAttempt = 0;
+    const maxAttempts = 6;
+    const targetWord = wordList[Math.floor(Math.random() * wordList.length)];
+    const game = document.getElementById("game");
+    const message = document.getElementById("message");
+    const attemptsData = JSON.parse(localStorage.getItem("attemptsData")) || [0, 0, 0, 0, 0, 0];
 
-    const datum = new Date();
-    const datumString = datum.getFullYear() + "-" + (datum.getMonth() + 1) + "-" + datum.getDate();
-    let seed = 0;
-    for (let i = 0; i < datumString.length; i++) seed += datumString.charCodeAt(i);
-
-    function seededRandom(seed) {
-      let x = Math.sin(seed) * 10000;
-      return x - Math.floor(x);
-    }
-
-    function shuffleArraySeeded(arr, seed) {
-      let a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(seededRandom(seed + i) * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    }
-
-    const teikenWoord = shuffleArraySeeded(woordLys, seed)[0];
-    let pogings = [];
-    let huidigeInvoer = "";
-
-    const bord = document.getElementById("bord");
-    const invoerBlokkies = document.getElementById("invoer-blokkies");
-    const boodskap = document.getElementById("boodskap");
-    const sleutelbord = document.getElementById("sleutelbord");
-
-    function laaiBord() {
-      bord.innerHTML = "";
-      for (let i = 0; i < maksimumPogings * 5; i++) {
-        const tegel = document.createElement("div");
-        tegel.className = "tegel";
-        bord.appendChild(tegel);
+    // Create input tiles
+    for (let i = 0; i < maxAttempts; i++) {
+      for (let j = 0; j < 5; j++) {
+        const input = document.createElement("input");
+        input.maxLength = 1;
+        input.classList.add("tile");
+        input.dataset.row = i;
+        input.dataset.col = j;
+        input.disabled = i !== 0;
+        input.addEventListener("input", handleInput);
+        game.appendChild(input);
       }
     }
 
-    function laaiInvoerBlokkies() {
-      invoerBlokkies.innerHTML = "";
-      for (let i = 0; i < 5; i++) {
-        const b = document.createElement("div");
-        b.className = "tegel invoer-tegel";
-        if (huidigeInvoer[i]) b.textContent = huidigeInvoer[i].toUpperCase();
-        invoerBlokkies.appendChild(b);
+    function handleInput(e) {
+      const input = e.target;
+      const next = input.nextElementSibling;
+      if (input.value && next && next.dataset.row === input.dataset.row) {
+        next.focus();
       }
     }
 
-    function stuurRaaiskoot() {
-      const raai = huidigeInvoer.toLowerCase();
-      if (raai.length !== 5 || !woordLys.includes(raai)) {
-        boodskap.textContent = "Ongeldige woord.";
+    function getCurrentWord() {
+      const inputs = document.querySelectorAll(`.tile[data-row="${currentAttempt}"]`);
+      return Array.from(inputs).map(input => input.value.toLowerCase()).join("");
+    }
+
+    function markInvalidRow() {
+      const inputs = document.querySelectorAll(`.tile[data-row="${currentAttempt}"]`);
+      inputs.forEach(input => input.style.color = "red");
+    }
+
+    function checkWord() {
+      const guess = getCurrentWord();
+
+      if (guess.length < 5) {
+        message.textContent = "Voer asseblief 5 letters in.";
         return;
       }
-      pogings.push(raai);
-      huidigeInvoer = "";
-      laaiInvoerBlokkies();
-      werkBordOp();
-      if (raai === teikenWoord) {
-        boodskap.textContent = "🎉 Reg geraai!";
-        stoorStats(true);
-      } else if (pogings.length === maksimumPogings) {
-        boodskap.textContent = "❌ Uit pogings! Die woord was: " + teikenWoord.toUpperCase();
-        stoorStats(false);
-      }
-    }
 
-    function werkBordOp() {
-      const tegels = document.querySelectorAll(".tegel");
-      pogings.forEach((woord, ry) => {
-        for (let i = 0; i < 5; i++) {
-          const letter = woord[i];
-          const tegel = tegels[ry * 5 + i];
-          tegel.textContent = letter.toUpperCase();
-          if (letter === teikenWoord[i]) {
-            tegel.classList.add("korrek");
-          } else if (teikenWoord.includes(letter)) {
-            tegel.classList.add("gedeel");
-          } else {
-            tegel.classList.add("verkeerd");
-          }
+      if (!wordList.includes(guess)) {
+        message.textContent = "Woord nie in lys nie.";
+        markInvalidRow();
+        return;
+      }
+
+      const inputs = document.querySelectorAll(`.tile[data-row="${currentAttempt}"]`);
+      const targetLetters = targetWord.split("");
+
+      inputs.forEach((input, index) => {
+        input.disabled = true;
+        if (input.value.toLowerCase() === targetLetters[index]) {
+          input.style.backgroundColor = "#4CAF50"; // Groen
+          input.style.color = "white";
+        } else if (targetLetters.includes(input.value.toLowerCase())) {
+          input.style.backgroundColor = "#FFD700"; // Geel
+        } else {
+          input.style.backgroundColor = "#ccc";
         }
       });
+
+      if (guess === targetWord) {
+        message.textContent = `Raai reg! Die woord was "${targetWord.toUpperCase()}".`;
+        attemptsData[currentAttempt]++;
+        localStorage.setItem("attemptsData", JSON.stringify(attemptsData));
+        updateChart();
+        return;
+      }
+
+      currentAttempt++;
+      if (currentAttempt >= maxAttempts) {
+        message.textContent = `Ongelukkig! Die regte woord was "${targetWord.toUpperCase()}".`;
+        updateChart();
+        return;
+      }
+
+      // Enable next row
+      const nextInputs = document.querySelectorAll(`.tile[data-row="${currentAttempt}"]`);
+      nextInputs.forEach(input => input.disabled = false);
+      nextInputs[0].focus();
     }
 
-    function deelResultaat() {
-      alert("Hierdie funksie is nog in ontwikkeling.");
-    }
-
-    function stoorStats(wen) {
-      let stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
-      if (!stats.pogingTelling) stats.pogingTelling = {};
-      const pog = pogings.length;
-      stats.pogingTelling[pog] = (stats.pogingTelling[pog] || 0) + 1;
-      localStorage.setItem("woordStats", JSON.stringify(stats));
-      tekenGrafiek(stats.pogingTelling);
-    }
-
-    function tekenGrafiek(pogingData) {
-      const ctx = document.getElementById('pogingGrafiek').getContext('2d');
-      new Chart(ctx, {
+    function updateChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (window.myChart) window.myChart.destroy(); // prevent duplicate
+      window.myChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['1', '2', '3', '4', '5', '6'],
+          labels: ["1", "2", "3", "4", "5", "6"],
           datasets: [{
-            label: 'Wen met pogings',
-            data: [1, 2, 3, 1, 0, 0].map((v, i) => pogingData[i + 1] || 0),
-            backgroundColor: '#6aaa64'
+            label: 'Oorwinnings per poging',
+            data: attemptsData,
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#66BB6A', '#BA68C8', '#FFA726'],
           }]
         },
         options: {
           scales: {
-            y: { beginAtZero: true }
+            y: { beginAtZero: true, precision: 0 }
           }
         }
       });
     }
 
-    laaiBord();
-    laaiInvoerBlokkies();
+    updateChart(); // Initial chart on load
   </script>
 </body>
 </html>
