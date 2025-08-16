@@ -2,342 +2,282 @@
 <html lang="af">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Woord van die Dag</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     :root {
       --bg: #f3f4f6;
-      --tile-bg: #fff;
-      --tile-border: #ccc;
-      --correct: #6aaa64;
-      --present: #c9b458;
-      --absent: #787c7e;
-      --error: #ff4d4f;
+      --text: #111;
+      --tile-correct: #6aaa64;
+      --tile-wrong-spot: #c9b458;
+      --tile-incorrect: #787c7e;
+      --tile-border: #d3d6da;
+      --invalid: #dc2626;
     }
 
     body {
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
+      font-family: sans-serif;
       background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    h1 {
-      margin: 20px 0 10px;
-    }
-
-    #game {
-      display: grid;
-      grid-template-rows: repeat(6, 1fr);
-      gap: 5px;
-    }
-
-    .row {
-      display: flex;
-      justify-content: center;
-    }
-
-    .tile {
-      width: 50px;
-      height: 50px;
-      margin: 3px;
-      background: var(--tile-bg);
-      border: 2px solid var(--tile-border);
-      text-transform: uppercase;
-      font-size: 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 5px;
-    }
-
-    .tile.correct { background: var(--correct); color: white; border: none; }
-    .tile.present { background: var(--present); color: white; border: none; }
-    .tile.absent  { background: var(--absent);  color: white; border: none; }
-    .tile.error   { border: 2px solid var(--error); }
-
-    #keyboard {
-      margin: 20px auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      user-select: none;
-    }
-
-    .key-row {
-      display: flex;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .key {
-      padding: 10px 14px;
-      font-size: 1.1rem;
-      background: #ddd;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .key:hover {
-      background: #ccc;
-    }
-
-    #message {
-      color: var(--error);
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
-    #statsModal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #statsContent {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 400px;
+      color: var(--text);
+      margin: 0;
+      padding: 0;
       text-align: center;
     }
 
-    .bar {
-      height: 20px;
-      background: var(--correct);
-      margin: 4px 0;
-      border-radius: 4px;
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #111;
+      color: white;
+      padding: 10px 20px;
     }
 
-    #hamburger {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      font-size: 24px;
+    header h1 {
+      margin: 0 auto;
+      font-size: 1.5rem;
+    }
+
+    #menuBtn {
+      font-size: 1.5rem;
+      background: none;
+      color: white;
+      border: none;
       cursor: pointer;
     }
 
-    #sidebar {
+    .sidebar {
       position: fixed;
-      top: 0;
-      left: -250px;
-      width: 250px;
+      top: 0; left: -250px;
       height: 100%;
-      background: white;
-      box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+      width: 250px;
+      background: #fff;
+      border-right: 2px solid #ccc;
       padding: 20px;
       transition: left 0.3s ease-in-out;
+      text-align: left;
+      z-index: 1000;
     }
 
-    #sidebar.show {
+    .sidebar.open {
       left: 0;
     }
 
-    #sidebar a {
-      display: block;
-      margin: 15px 0;
-      text-decoration: none;
-      color: #333;
+    .sidebar h2 {
+      margin-top: 0;
     }
 
-    @media screen and (max-width: 600px) {
-      .tile { width: 40px; height: 40px; font-size: 1.5rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .tile {
+      width: 60px;
+      height: 60px;
+      border: 2px solid var(--tile-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      text-transform: uppercase;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    .invalid-word {
+      border-color: var(--invalid) !important;
+      color: var(--invalid);
+    }
+
+    .keyboard {
+      margin-top: 30px;
+    }
+
+    .keyboard-row {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+
+    .key {
+      background: #d3d6da;
+      border: none;
+      margin: 2px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      min-width: 40px;
+      text-transform: uppercase;
+    }
+
+    .popup, .graph-popup {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #999;
+      z-index: 2000;
+      display: none;
+    }
+
+    .popup.open, .graph-popup.open {
+      display: block;
+    }
+
+    .graph-bar {
+      background: var(--tile-correct);
+      height: 20px;
+      margin: 5px 0;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      color: #888;
+    }
+
+    @media (max-width: 600px) {
+      .tile {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+      }
     }
   </style>
 </head>
 <body>
 
-<div id="hamburger" onclick="toggleSidebar()">☰</div>
+<header>
+  <button id="menuBtn">&#9776;</button>
+  <h1>Woord van die Dag</h1>
+</header>
 
-<div id="sidebar">
-  <a href="#" onclick="showStats()">📊 Statistiek</a>
-  <a href="#">🔁 Voer uit / in</a>
-  <a href="#">🧪 Oefenmodus</a>
+<div class="sidebar" id="sidebar">
+  <h2>Menu</h2>
+  <button onclick="toggleStats()">📊 Statistiek</button><br><br>
+  <button onclick="exportStats()">⬆️ Voer Uit</button>
+  <button onclick="importStats()">⬇️ Voer In</button><br><br>
+  <button onclick="enablePractice()">🧪 Oefenmodus</button>
 </div>
 
-<h1>Woord van die Dag</h1>
-<div id="game"></div>
-<div id="keyboard"></div>
-<div id="message"></div>
-
-<div id="statsModal">
-  <div id="statsContent">
-    <h2>Jou Statistiek</h2>
-    <div id="stats"></div>
-    <button onclick="closeStats()">Sluit</button>
+<div id="gameBoard">
+  <!-- 6 rye van 5 blokkies -->
+  <div class="grid" id="gridContainer">
+    <!-- Dynamies gegenereer met JS -->
   </div>
 </div>
 
+<div class="keyboard" id="keyboard">
+  <!-- Sleutelbord -->
+  <div class="keyboard-row">
+    <button class="key">q</button>
+    <button class="key">w</button>
+    <button class="key">e</button>
+    <button class="key">r</button>
+    <button class="key">t</button>
+    <button class="key">y</button>
+    <button class="key">u</button>
+    <button class="key">i</button>
+    <button class="key">o</button>
+    <button class="key">p</button>
+  </div>
+  <div class="keyboard-row">
+    <button class="key">a</button>
+    <button class="key">s</button>
+    <button class="key">d</button>
+    <button class="key">f</button>
+    <button class="key">g</button>
+    <button class="key">h</button>
+    <button class="key">j</button>
+    <button class="key">k</button>
+    <button class="key">l</button>
+  </div>
+  <div class="keyboard-row">
+    <button class="key" id="enterKey">Enter</button>
+    <button class="key">z</button>
+    <button class="key">x</button>
+    <button class="key">c</button>
+    <button class="key">v</button>
+    <button class="key">b</button>
+    <button class="key">n</button>
+    <button class="key">m</button>
+    <button class="key" id="delKey">⌫</button>
+  </div>
+</div>
+
+<div class="popup" id="statsPopup">
+  <h2>Statistiek</h2>
+  <p><strong>Spele gespeel:</strong> <span id="gamesPlayed">0</span></p>
+  <p><strong>Oorwinnings:</strong> <span id="wins">0</span></p>
+  <p><strong>Huidige lopie:</strong> <span id="streak">0</span></p>
+  <button onclick="closePopup()">Maak toe</button>
+</div>
+
+<div class="graph-popup" id="graphPopup">
+  <h2>Jou Pogings</h2>
+  <div id="graphBars">
+    <!-- Stawe sal hier verskyn -->
+  </div>
+</div>
+
+<div class="footer">
+  &copy; 2025 Hanro se Woordspeletjie
+</div>
+
 <script>
-  const today = new Date().toISOString().split('T')[0];
-  const allWords = ["water", "vloer", "ligte", "venyn", "plane", "stoep", "kamer"];
-  const wordOfTheDay = allWords[new Date().getDate() % allWords.length];
-
+  const today = "2025-08-16";
+  const wordList = ["motor", "blom", "water", "grond", "vrede", "tafel", "stoel"];
+  let wordOfDay = wordList[new Date().getDate() % wordList.length];
   let currentRow = 0;
-  let currentGuess = "";
-  let guesses = [];
-  let gameOver = false;
+  let attempts = [];
 
-  const game = document.getElementById("game");
-  const keyboard = document.getElementById("keyboard");
-  const message = document.getElementById("message");
-
-  function buildGrid() {
-    for (let i = 0; i < 6; i++) {
-      const row = document.createElement("div");
-      row.className = "row";
-      for (let j = 0; j < 5; j++) {
-        const tile = document.createElement("div");
-        tile.className = "tile";
-        tile.id = `tile-${i}-${j}`;
-        row.appendChild(tile);
-      }
-      game.appendChild(row);
-    }
-  }
-
-  function buildKeyboard() {
-    const rows = ["qwertyuiop", "asdfghjkl", "⌫zxcvbnm⏎"];
-    rows.forEach(row => {
-      const rowDiv = document.createElement("div");
-      rowDiv.className = "key-row";
-      row.split('').forEach(key => {
-        const keyDiv = document.createElement("div");
-        keyDiv.className = "key";
-        keyDiv.textContent = key === "⏎" ? "Enter" : key === "⌫" ? "Back" : key;
-        keyDiv.onclick = () => handleKey(key);
-        rowDiv.appendChild(keyDiv);
-      });
-      keyboard.appendChild(rowDiv);
-    });
-  }
-
-  function handleKey(key) {
-    if (gameOver) return;
-    if (key === "⏎") return submitGuess();
-    if (key === "⌫") {
-      if (currentGuess.length > 0) {
-        currentGuess = currentGuess.slice(0, -1);
-        updateTiles();
-      }
-      return;
-    }
-    if (currentGuess.length < 5 && /^[a-z]$/i.test(key)) {
-      currentGuess += key;
-      updateTiles();
-    }
-  }
-
-  function updateTiles() {
-    for (let i = 0; i < 5; i++) {
-      const tile = document.getElementById(`tile-${currentRow}-${i}`);
-      tile.textContent = currentGuess[i] ? currentGuess[i].toUpperCase() : "";
-    }
-  }
-
-  function submitGuess() {
-    if (currentGuess.length !== 5) {
-      showMessage("Woorde moet 5 letters lank wees.");
-      return;
-    }
-    if (!allWords.includes(currentGuess.toLowerCase())) {
-      showMessage("Onbekende woord!");
-      markInvalid();
-      return;
-    }
-
-    checkGuess();
-    guesses.push(currentGuess);
-    currentGuess = "";
-    currentRow++;
-
-    if (currentRow === 6 || gameOver) {
-      setTimeout(() => {
-        showStats();
-      }, 500);
-    }
-  }
-
-  function checkGuess() {
-    const guess = currentGuess.toLowerCase();
-    const word = wordOfTheDay.toLowerCase();
-
-    for (let i = 0; i < 5; i++) {
-      const tile = document.getElementById(`tile-${currentRow}-${i}`);
-      tile.textContent = guess[i].toUpperCase();
-      tile.classList.remove("error");
-
-      if (guess[i] === word[i]) {
-        tile.classList.add("correct");
-      } else if (word.includes(guess[i])) {
-        tile.classList.add("present");
-      } else {
-        tile.classList.add("absent");
-      }
-    }
-
-    if (guess === word) {
-      gameOver = true;
-      showMessage("Goed gedoen!");
-    } else if (currentRow === 5) {
-      gameOver = true;
-      showMessage("Jammer! Die woord was: " + word.toUpperCase());
-    }
-  }
-
-  function showMessage(msg) {
-    message.textContent = msg;
-    setTimeout(() => message.textContent = "", 2000);
-  }
-
-  function markInvalid() {
-    for (let i = 0; i < 5; i++) {
-      const tile = document.getElementById(`tile-${currentRow}-${i}`);
-      tile.classList.add("error");
-    }
-  }
+  // Doen alles hier binne...
 
   function toggleSidebar() {
-    document.getElementById("sidebar").classList.toggle("show");
+    document.getElementById("sidebar").classList.toggle("open");
   }
 
-  function showStats() {
-    const statsDiv = document.getElementById("stats");
-    statsDiv.innerHTML = "";
-    const bars = guesses.map((g, i) => `<div class="bar" style="width: ${(6 - i) * 15 + 30}%;">Poging ${i + 1}: ${g.toUpperCase()}</div>`).join("");
-    statsDiv.innerHTML = bars;
-    document.getElementById("statsModal").style.display = "flex";
+  function toggleStats() {
+    document.getElementById("statsPopup").classList.toggle("open");
   }
 
-  function closeStats() {
-    document.getElementById("statsModal").style.display = "none";
+  function closePopup() {
+    document.getElementById("statsPopup").classList.remove("open");
+    document.getElementById("graphPopup").classList.add("open");
   }
 
-  buildGrid();
-  buildKeyboard();
-
-  // Opsionele: Beperk tot een poging per dag
-  if (localStorage.getItem("played-" + today)) {
-    showMessage("Jy het al vandag gespeel.");
-    gameOver = true;
-    showStats();
-  } else {
-    window.addEventListener("beforeunload", () => {
-      if (guesses.length > 0) {
-        localStorage.setItem("played-" + today, "true");
-      }
-    });
+  function exportStats() {
+    const data = JSON.stringify({ gespeel: 5, wen: 3, streak: 2 });
+    alert("Kopieer hierdie data:\n\n" + data);
   }
+
+  function importStats() {
+    const json = prompt("Plak jou data hier:");
+    if (json) {
+      const data = JSON.parse(json);
+      document.getElementById("gamesPlayed").innerText = data.gespeel;
+      document.getElementById("wins").innerText = data.wen;
+      document.getElementById("streak").innerText = data.streak;
+    }
+  }
+
+  function enablePractice() {
+    alert("Oefenmodus is aan.");
+  }
+
+  document.getElementById("menuBtn").addEventListener("click", toggleSidebar);
+
+  // TODO: Jy kan hier uitbrei vir letter hantering, woorde opbou, poging evaluasie, en grafiek generasie.
 
 </script>
+
 </body>
 </html>
 
