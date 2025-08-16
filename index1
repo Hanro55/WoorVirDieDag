@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="af">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Woord van die Dag 🇿🇦</title>
+<style>
+  /* Algemene styl */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    background: #f3f4f6;
+    color: #333;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3 {
+    text-align: center;
+  }
+
+  /* Hamburger menu knop */
+  #hamburger {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    width: 35px;
+    height: 30px;
+    cursor: pointer;
+    z-index: 2000;
+  }
+  #hamburger div {
+    background-color: #333;
+    height: 4px;
+    margin: 5px 0;
+    border-radius: 2px;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 280px;
+    height: 100vh;
+    background-color: #fff;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    padding: 20px;
+    z-index: 1500;
+  }
+  #sidebar.open {
+    transform: translateX(0);
+  }
+  #close-sidebar {
+    font-size: 30px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: block;
+    margin-left: auto;
+    margin-bottom: 10px;
+  }
+
+  /* Sidebar inhoud */
+  #sidebar h2 {
+    margin-top: 0;
+  }
+  #sidebar p {
+    margin: 6px 0;
+  }
+  #sidebar button {
+    width: 100%;
+    margin: 8px 0;
+    padding: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 8px;
+    border: none;
+    background-color: #6aaa64;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  #sidebar button:hover {
+    background-color: #519e50;
+  }
+
+  /* Statistiek staafgrafieke */
+  #distribution-bars div.bar,
+  #distribution-bars-modal div.bar {
+    background-color: #6aaa64;
+    color: white;
+    padding: 4px 8px;
+    margin: 6px 0;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Woorde lys */
+  #woord-lys {
+    max-height: 130px;
+    overflow-y: auto;
+    padding: 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  #woord-lys span {
+    display: inline-block;
+    background: #ddd;
+    margin: 3px 5px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-weight: 600;
+    user-select: none;
+  }
+
+  /* Bord van raaiskote */
+  #board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    max-width: 350px;
+    margin: 80px auto 20px auto;
+  }
+  .tile {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    background-color: white;
+  }
+  .correct {
+    background-color: #6aaa64;
+    color: white;
+    border: none;
+  }
+  .present {
+    background-color: #c9b458;
+    color: white;
+    border: none;
+  }
+  .absent {
+    background-color: #787c7e;
+    color: white;
+    border: none;
+  }
+
+  /* Invoer veld en knoppie */
+  #guess-input {
+    width: 320px;
+    max-width: 90vw;
+    font-size: 1.3rem;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid #ccc;
+    text-transform: uppercase;
+    margin: 10px auto;
+    display: block;
+    letter-spacing: 8px;
+    text-align: center;
+  }
+  #submit-btn {
+    display: block;
+    margin: 10px auto 30px auto;
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    background-color: #6aaa64;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  #submit-btn:disabled {
+    background-color: #a5d6a7;
+    cursor: not-allowed;
+  }
+  #submit-btn:hover:not(:disabled) {
+    background-color: #519e50;
+  }
+
+  /* Sleutelbord */
+  #keyboard {
+    max-width: 350px;
+    margin: 0 auto 30px auto;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+    user-select: none;
+  }
+  .key {
+    padding: 12px 0;
+    border-radius: 8px;
+    background-color: #ddd;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 1rem;
+    user-select: none;
+  }
+  .key.correct {
+    background-color: #6aaa64;
+    color: white;
+  }
+  .key.present {
+    background-color: #c9b458;
+    color: white;
+  }
+  .key.absent {
+    background-color: #787c7e;
+    color: white;
+  }
+  .key.special {
+    grid-column: span 2;
+    background-color: #6aaa64;
+    color: white;
+  }
+
+  /* Boodskap */
+  #message {
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    min-height: 30px;
+    color: #b00020;
+  }
+
+  /* Deel-knoppies onder die inset */
+  #share-row { text-align: center; margin: 8px auto 20px auto; }
+  .action-btn {
+    padding: 10px 14px; border: none; border-radius: 8px;
+    background-color: #6aaa64; color: #fff; cursor: pointer; margin: 4px 6px;
+  }
+  .action-btn:disabled { 
+    background-color: #a5d6a7; cursor: not-allowed; 
+  }
+
+  /* Modal style */
+  #stats-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+  #stats-modal.open {
+    display: flex;
+  }
+  #stats-modal .modal-content {
+    background: white;
+    padding: 20px 25px;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    font-size: 1rem;
+  }
+  #stats-modal .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #555;
+  }
+  #stats-modal h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- Hamburger menu -->
+<div id="hamburger" aria-label="Menu" role="button" tabindex="0" aria-expanded="false" aria-controls="sidebar">
+  <div></div><div></div><div></div>
+</div>
+
+<!-- Sidebar -->
+<aside id="sidebar" aria-hidden="true">
+  <button id="close-sidebar" aria-label="Sluit menu">&times;</button>
+  <h2>Statistiek</h2>
+  <p>Gespeel: <span id="total-played">0</span></p>
+  <p>Wenkoers: <span id="win-rate">0%</span></p>
+  <p>Huidige streek: <span id="current-streak">0</span></p>
+  <p>Langste streek: <span id="best-streak">0</span></p>
+  <p>Laas gespeel: <span id="last-play-date">Nog nie</span></p>
+
+  <div id="distribution-bars"></div>
+
+  <h3>Woorde in lys</h3>
+  <div id="woord-lys"></div>
+  
+  <button id="practice-btn">Oefen vorige dae</button>
+  <button id="export-btn">Voer Statistiek Uit</button>
+  <button id="import-btn">Voer Statistiek In</button>
+</aside>
+
+<!-- Titel -->
+<h2>Woord van die Dag 🇿🇦 </h2>
+
+<!-- Bord -->
+<div id="board" aria-label="Raaiskoot bord"></div>
+
+<!-- Invoer -->
+<input id="guess-input" maxlength="5" placeholder="Tik 5-letter woord" aria-label="Tik jou raaiskoot hier" autocomplete="off" />
+<button id="submit-btn" aria-label="Voer raaiskoot in">Voer in</button>
+
+<div id="message" role="alert" aria-live="assertive"></div>
+<div id="share-row">
+  <button id="share-btn" class="action-btn" disabled>📋 Deel jou poging</button>
+  <button id="wa-share-btn" class="action-btn" disabled>💬 WhatsApp</button>
+</div>
+  
+<!-- Sleutelbord -->
+<div id="keyboard" aria-label="Virtuele sleutelbord"></div>
+
+<!-- Modal vir statistiek -->
+<div id="stats-modal" role="dialog" aria-modal="true" aria-labelledby="stats-title" tabindex="-1">
+  <div class="modal-content">
+    <button class="close-btn" aria-label="Sluit statistiek">&times;</button>
+    <h2 id="stats-title">Jou Statistiek</h2>
+    <div id="stats-summary"></div>
+    <div id="distribution-bars-modal"></div>
+    <button id="copy-results">📋 Deel jou resultate</button>
+    <button id="whatsapp-share">💬 Deel via WhatsApp</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // --- Konfig --- 
+  const maxGuesses = 6;
+  const teikenWoord = "PLANT"; // Vervang met die daaglikse woord
+  
+  // --- Elemente --- 
+  const sidebar = document.getElementById("sidebar");
+  const hamburger = document.getElementById("hamburger");
+  const closeSidebarBtn = document.getElementById("close-sidebar");
+  const practiceBtn = document.getElementById("practice-btn");
+  const exportBtn = document.getElementById("export-btn");
+  const importBtn = document.getElementById("import-btn");
+  const statsModal = document.getElementById("stats-modal");
+  const statsCloseBtn = statsModal.querySelector(".close-btn");
+  const statsSummary = document.getElementById("stats-summary");
+  const distributionBarsModal = document.getElementById("distribution-bars-modal");
+  const copyResultsBtn = document.getElementById("copy-results");
+  const whatsappShareBtn = document.getElementById("whatsapp-share");
+  const shareBtn = document.getElementById("share-btn");
+  const waShareBtn = document.getElementById("wa-share-btn");
+  const guessInput = document.getElementById("guess-input");
+  const submitBtn = document.getElementById("submit-btn");
+  const board = document.getElementById("board");
+  const keyboard = document.getElementById("keyboard");
+  const messageEl = document.getElementById("message");
+  const woordLysEl = document.getElementById("woord-lys");
+
+  // --- Data --- 
+  let guesses = [];
+  let stats = {
+    total: 0,
+    wins: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    lastPlayDate: null,
+    distribution: {}
+  };
+
+  // --- Hamburger sidebar ---
+  function openSidebar() {
+    sidebar.classList.add("open");
+    sidebar.setAttribute("aria-hidden", "false");
+    hamburger.setAttribute("aria-expanded", "true");
+  }
+  function closeSidebar() {
+    sidebar.classList.remove("open");
+    sidebar.setAttribute("aria-hidden", "true");
+    hamburger.setAttribute("aria-expanded", "false");
+  }
+  hamburger.addEventListener("click", () => {
+    sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+  });
+  hamburger.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      hamburger.click();
+    }
+  });
+  closeSidebarBtn.addEventListener("click", closeSidebar);
+
+  // --- Funksie om te gradeer ---
+  // Gradeer elke letter van 'guess' teen 'target' (teikenWoord)
+  // Return 'correct', 'present', of 'absent' per letter
+  function gradeGuess(guess, target) {
+    const result = new Array(guess.length).fill("absent");
+    const targetLetters = target.split("");
+    const guessLetters = guess.split("");
+    
+    // Eerste slaan: korrek op regte plek
+    for (let i = 0; i < guessLetters.length; i++) {
+      if (guessLetters[i] === targetLetters[i]) {
+        result[i] = "correct";
+        targetLetters[i] = null; // Merk as gebruik
+        guessLetters[i] = null;  // Merk as verwerk
+      }
+    }
+    // Tweede slaan: teenwoordig maar verkeerde plek
+    for (let i = 0; i < guessLetters.length; i++) {
+      if (guessLetters[i] && targetLetters.includes(guessLetters[i])) {
+        result[i] = "present";
+        const index = targetLetters.indexOf(guessLetters[i]);
+        targetLetters[index] = null;
+      }
+    }
+    return result;
+  }
+
+  // --- Bord skep ---
+  function createBoard() {
+    board.innerHTML = "";
+    for (let i = 0; i < maxGuesses * teikenWoord.length; i++) {
+      const tile = document.createElement("div");
+      tile.className = "tile";
+      board.appendChild(tile);
+    }
+  }
+
+  // --- Bord render ---
+  function renderBoard() {
+    const tiles = board.children;
+    for (let i = 0; i < maxGuesses; i++) {
+      const guess = guesses[i] || "";
+      const grades = guess ? gradeGuess(guess, teikenWoord) : [];
+      for (let j = 0; j < teikenWoord.length; j++) {
+        const idx = i * teikenWoord.length + j;
+        const tile = tiles[idx];
+        tile.textContent = guess[j] ? guess[j].toUpperCase() : "";
+        tile.className = "tile";
+        if (grades[j]) {
+          tile.classList.add(grades[j]);
+        }
+      }
+    }
+  }
+
+  // --- Skep sleutelbord ---
+  const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
+  function createKeyboard() {
+    keyboard.innerHTML = "";
+    keys.forEach(k => {
+      const keyBtn = document.createElement("button");
+      keyBtn.className = "key";
+      keyBtn.textContent = k;
+      keyBtn.setAttribute("aria-label", `Sleutel ${k}`);
+      keyBtn.addEventListener("click", () => {
+        addLetter(k);
+      });
+      keyboard.appendChild(keyBtn);
+    });
+    // Verwyder sleutel, kan later 'Enter' en 'Backspace' byvoeg
+  }
+
+  // --- Voeg letter by invoer ---
+  function addLetter(letter) {
+    if (guessInput.value.length < teikenWoord.length) {
+      guessInput.value += letter;
+      toggleSubmitState();
+    }
+  }
+
+  // --- Wissel inligting van submit-knoppie ---
+  function toggleSubmitState() {
+    submitBtn.disabled = guessInput.value.length !== teikenWoord.length;
+  }
+
+  // --- Kyk of woord geldig is (kan later verbeter) ---
+  function isValidWord(word) {
+    // Simpel voorbeeld, kan 'n woordelys gebruik
+    return word.length === teikenWoord.length && /^[a-zA-Z]+$/.test(word);
+  }
+
+  // --- Proses raaiskoot ---
+  function submitGuess() {
+    const guess = guessInput.value.toUpperCase();
+    if (!isValidWord(guess)) {
+      showMessage("Ongeldige woord, probeer weer.");
+      return;
+    }
+    if (guesses.length >= maxGuesses) {
+      showMessage("Jy het al jou pogings gebruik.");
+      return;
+    }
+    guesses.push(guess);
+    guessInput.value = "";
+    toggleSubmitState();
+    renderBoard();
+    updateKeyboard();
+    updateSidebarWoorde();
+    enableShareButtons(true);
+    saveStatsToStorage();
+
+    if (guess === teikenWoord) {
+      showMessage("Baie goed! Jy het die woord reg gekry! 🎉");
+      updateStats(true);
+    } else if (guesses.length >= maxGuesses) {
+      showMessage(`Jy het klaar gespeel! Die woord was ${teikenWoord}.`);
+      updateStats(false);
+    } else {
+      showMessage("");
+    }
+  }
+
+  // --- Vertoon boodskap ---
+  function showMessage(msg) {
+    messageEl.textContent = msg;
+  }
+
+  // --- Update sleutelbord kleure ---
+  function updateKeyboard() {
+    const letterGrades = {};
+    guesses.forEach(g => {
+      const grades = gradeGuess(g, teikenWoord);
+      for (let i = 0; i < g.length; i++) {
+        const l = g[i];
+        if (grades[i] === "correct") {
+          letterGrades[l] = "correct";
+        } else if (grades[i] === "present" && letterGrades[l] !== "correct") {
+          letterGrades[l] = "present";
+        } else if (!letterGrades[l]) {
+          letterGrades[l] = "absent";
+        }
+      }
+    });
+
+    Array.from(keyboard.children).forEach(keyBtn => {
+      const k = keyBtn.textContent;
+      keyBtn.classList.remove("correct", "present", "absent");
+      if (letterGrades[k]) {
+        keyBtn.classList.add(letterGrades[k]);
+      }
+    });
+  }
+
+  // --- Update woordlys in sidebar ---
+  function updateSidebarWoorde() {
+    woordLysEl.innerHTML = "";
+    guesses.forEach(g => {
+      const span = document.createElement("span");
+      span.textContent = g;
+      woordLysEl.appendChild(span);
+    });
+  }
+
+  // --- Statistiek opdateer ---
+  function updateStats(won) {
+    stats.total++;
+    if (won) {
+      stats.wins = (stats.wins || 0) + 1;
+      stats.currentStreak = (stats.currentStreak || 0) + 1;
+      stats.bestStreak = Math.max(stats.bestStreak || 0, stats.currentStreak);
+    } else {
+      stats.currentStreak = 0;
+    }
+    stats.lastPlayDate = new Date().toLocaleDateString();
+
+    // Update verspreiding
+    const tries = guesses.length;
+    stats.distribution[tries] = (stats.distribution[tries] || 0) + 1;
+
+    updateSidebarStatsUI();
+  }
+
+  // --- Sidebar stats UI opdateer ---
+  function updateSidebarStatsUI() {
+    document.getElementById("total-played").textContent = stats.total;
+    document.getElementById("win-rate").textContent = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) + "%" : "0%";
+    document.getElementById("current-streak").textContent = stats.currentStreak || 0;
+    document.getElementById("best-streak").textContent = stats.bestStreak || 0;
+    document.getElementById("last-play-date").textContent = stats.lastPlayDate || "Nog nie";
+
+    // Update sidebar distribution bars
+    const distEl = document.getElementById("distribution-bars");
+    distEl.innerHTML = "";
+    const vals = Object.values(stats.distribution);
+    const maxCount = Math.max(1, ...(vals.length ? vals : [0]));
+    for (let i = 1; i <= maxGuesses; i++) {
+      const count = stats.distribution[i] || 0;
+      const widthPct = Math.max(8, (count / maxCount) * 100);
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.width = widthPct + "%";
+      bar.textContent = `${i} poging(s): ${count}`;
+      distEl.appendChild(bar);
+    }
+  }
+
+  // --- Statistiek modal update ---
+  function updateStatsModal() {
+    statsSummary.innerHTML = `
+      <p>Gespeel: ${stats.total}</p>
+      <p>Wenkoers: ${
+        (stats.total > 0)
+          ? Math.round((Math.min(stats.wins || 0, stats.total || 0) / stats.total) * 100) + "%"
+          : "0%"
+      }</p>
+      <p>Huidige streek: ${stats.currentStreak}</p>
+      <p>Langste streek: ${stats.bestStreak}</p>
+      <p>Laas gespeel: ${stats.lastPlayDate || "Nog nie"}</p>
+    `;
+
+    distributionBarsModal.innerHTML = "";
+    const vals = Object.values(stats.distribution);
+    const maxCount = Math.max(1, ...(vals.length ? vals : [0]));
+    for (let i = 1; i <= maxGuesses; i++) {
+      const count = stats.distribution[i] || 0;
+      const widthPct = Math.max(8, (count / maxCount) * 100);
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.width = widthPct + "%";
+      bar.textContent = `${i} poging(s): ${count}`;
+      distributionBarsModal.appendChild(bar);
+    }
+
+    enableShareButtons(guesses.length > 0);
+  }
+
+  // --- Deel resultate --- 
+  function getResultText() {
+    let result = `Woord van die Dag 🇿🇦\nPogings: ${guesses.length}/${maxGuesses}\n\n`;
+    guesses.forEach(g => {
+      const grades = gradeGuess(g, teikenWoord);
+      let line = "";
+      for (let s of grades) {
+        line += (s === "correct") ? "🟩" : (s === "present") ? "🟨" : "⬜";
+      }
+      result += line + "\n";
+    });
+    // result += `\nAntwoord: ${teikenWoord.toUpperCase()}\n`; // Opsioneel
+    result += `\nSpeel Woord van die Dag elke dag!`;
+    return result;
+  }
+
+  // --- Deel na knipbord ---
+  function shareToClipboard() {
+    const resultText = getResultText();
+    navigator.clipboard.writeText(resultText).then(() => {
+      alert("Resultate gekopieer na jou knipbord!");
+    }).catch(() => {
+      alert("Kopiëer misluk, probeer weer.");
+    });
+  }
+
+  // --- Deel na WhatsApp ---
+  function shareToWhatsApp() {
+    const resultText = encodeURIComponent(getResultText());
+    window.open(`https://wa.me/?text=${resultText}`, "_blank");
+  }
+
+  // --- Share knoppies ---
+  copyResultsBtn.addEventListener("click", shareToClipboard);
+  whatsappShareBtn.addEventListener("click", shareToWhatsApp);
+  shareBtn.addEventListener("click", shareToClipboard);
+  waShareBtn.addEventListener("click", shareToWhatsApp);
+
+  // --- Skakel deel knoppies aan/af ---
+  function enableShareButtons(enable) {
+    shareBtn.disabled = !enable;
+    waShareBtn.disabled = !enable;
+  }
+
+  // --- Statistiek modal ---
+  practiceBtn.addEventListener("click", () => {
+    closeSidebar();
+    statsModal.classList.add("open");
+    statsModal.focus();
+    updateStatsModal();
+  });
+  statsCloseBtn.addEventListener("click", () => {
+    statsModal.classList.remove("open");
+    guessInput.focus();
+  });
+  statsModal.addEventListener("click", e => {
+    if (e.target === statsModal) {
+      statsModal.classList.remove("open");
+      guessInput.focus();
+    }
+  });
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape" && statsModal.classList.contains("open")) {
+      statsModal.classList.remove("open");
+      guessInput.focus();
+    }
+  });
+
+  // --- Import / Export Statistiek ---
+  exportBtn.addEventListener("click", () => {
+    const dataStr = JSON.stringify(stats, null, 2);
+    alert("Kopieer jou statistiek data:\n\n" + dataStr);
+  });
+  importBtn.addEventListener("click", () => {
+    const input = prompt("Plak jou statistiek data hier:");
+    if (input) {
+      try {
+        const imported = JSON.parse(input);
+        if (imported && typeof imported === "object") {
+          stats = imported;
+          saveStatsToStorage();
+          updateSidebarStatsUI();
+          alert("Statistiek suksesvol ingevoer!");
+        } else {
+          alert("Ongeldige data.");
+        }
+      } catch {
+        alert("Kon nie data verwerk nie.");
+      }
+    }
+  });
+
+  // --- Laai/ Stoor --- 
+  function loadStatsFromStorage() {
+    try {
+      const stored = localStorage.getItem("woordvanDagStats");
+      if (stored) {
+        stats = JSON.parse(stored);
+      }
+    } catch {}
+  }
+  function saveStatsToStorage() {
+    try {
+      localStorage.setItem("woordvanDagStats", JSON.stringify(stats));
+    } catch {}
+  }
+
+  function loadGameFromStorage() {
+    try {
+      const storedGuesses = localStorage.getItem("woordvanDagGuesses");
+      if (storedGuesses) {
+        guesses = JSON.parse(storedGuesses);
+      }
+    } catch {}
+  }
+  function saveGameToStorage() {
+    try {
+      localStorage.setItem("woordvanDagGuesses", JSON.stringify(guesses));
+    } catch {}
+  }
+
+  // --- Update sidebar woordlys en stoor ---
+  function updateSidebarWoorde() {
+    woordLysEl.innerHTML = "";
+    guesses.forEach(g => {
+      const span = document.createElement("span");
+      span.textContent = g;
+      woordLysEl.appendChild(span);
+    });
+    saveGameToStorage();
+  }
+
+  // --- Invoer blok beheer ---
+  guessInput.addEventListener("input", () => {
+    guessInput.value = guessInput.value.toUpperCase().slice(0, teikenWoord.length);
+    toggleSubmitState();
+  });
+
+  // Submit knoppie
+  submitBtn.addEventListener("click", () => {
+    submitGuess();
+  });
+
+  // ENTER sleutel in invoer
+  guessInput.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !submitBtn.disabled) {
+      submitGuess();
+    }
+  });
+
+  // --- Begin ---
+  function init() {
+    loadStatsFromStorage();
+    loadGameFromStorage();
+    createBoard();
+    renderBoard();
+    createKeyboard();
+    updateKeyboard();
+    updateSidebarStatsUI();
+    updateSidebarWoorde();
+    toggleSubmitState();
+    enableShareButtons(guesses.length > 0);
+    guessInput.focus();
+  }
+  init();
+
+})();
+</script>
+
+</body>
+</html>
