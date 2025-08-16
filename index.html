@@ -85,18 +85,22 @@
     background-color: #519e50;
   }
 
-  /* Statistiek staafgrafieke */
-  #distribution-bars div.bar {
-    background-color: #6aaa64;
-    color: white;
-    padding: 4px 8px;
-    margin: 6px 0;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+/* Statistiek staafgrafieke */
+#distribution-bars div.bar,
+#distribution-bars-modal div.bar {
+  background-color: #6aaa64;
+  color: white;
+  padding: 4px 8px;
+  margin: 6px 0;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Maak seker dit bly binne houer – breedte kom nou in % uit JS */
+  max-width: 100%;
+}
+
 
   /* Woorde lys */
   #woord-lys {
@@ -329,26 +333,28 @@
     <button id="whatsapp-share">💬 Deel via WhatsApp</button>
   </div>
 </div>
-
 <script>
 (() => {
   "use strict";
 
-  // --- Woordlys ---
-  const woordLys = [
-    "afrik", "beter", "klein", "woord", "speel", "skryf", "huisn", "vandag", "klank", "skool",
-    "smaak", "maanl", "vraas", "ligte", "vlugte", "stuur", "kykna", "blywe", "groot", "dinge"
-  ]; // Vul met jou eie lys
-
+  // --- Konfig --- 
   const maxGuesses = 6;
   const wordLength = 5;
 
-  // --- Seeded shuffle funksies (jou kode) ---
+  // --- Woordlys (joune) ---
+  const woordLys = [
+    "afrik", "beter", "klein", "woord", "speel", "skryf", "huisn", "vandag", "klank",
+    "smaak", "maanl", "vraas", "ligte", "vlugte", "stuur", "kykna", "blywe", "groot", "dinge", "skool"
+  ];
+
+  // Net 5-letter woorde vir target én validasie
+  const WORDS5 = woordLys.filter(w => w.length === wordLength);
+
+  // --- Seeded shuffle --- 
   function seededRandom(seed) {
     let x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
   }
-
   function shuffleArraySeeded(arr, seed) {
     let a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -357,21 +363,23 @@
     }
     return a;
   }
-
   function kryVandagWoord() {
     const vandag = new Date();
-    const datumString = vandag.getFullYear() + "-" + (vandag.getMonth() + 1) + "-" + vandag.getDate();
+    // Zero-pad vir deterministiese saad, bv. 2025-08-09
+    const mm = String(vandag.getMonth() + 1).padStart(2, "0");
+    const dd = String(vandag.getDate()).padStart(2, "0");
+    const datumString = `${vandag.getFullYear()}-${mm}-${dd}`;
     let seed = 0;
     for (let i = 0; i < datumString.length; i++) {
       seed += datumString.charCodeAt(i);
     }
-    const geskommeldeLys = shuffleArraySeeded(woordLys, seed);
-    return geskommeldeLys[0];
+    const geskommelde = shuffleArraySeeded(WORDS5, seed);
+    return geskommelde[0] || "woord"; // fallback
   }
 
   const teikenWoord = kryVandagWoord();
 
-  // --- DOM elemente ---
+  // --- DOM ---
   const board = document.getElementById("board");
   const guessInput = document.getElementById("guess-input");
   const submitBtn = document.getElementById("submit-btn");
@@ -409,31 +417,62 @@
     distribution: {} // pogingNumber -> count
   };
 
-  // --- Laai stats uit localStorage ---
+  // --- Helpers ---
+  function toggleSubmitState() {
+    submitBtn.disabled = isGameOver || guessInput.value.length !== wordLength;
+  }
+  function showMessage(msg, duration=3000) {
+    messageDiv.textContent = msg;
+    if (duration > 0) {
+      setTimeout(() => {
+        if (messageDiv.textContent === msg) messageDiv.textContent = "";
+      }, duration);
+    }
+  }
+
+  // Gradeer korrek met duplikaat-logika (Wordle-styl)
+  function gradeGuess(guess, target) {
+    const res = Array(wordLength).fill("absent");
+    const counts = {};
+    for (let ch of target) counts[ch] = (counts[ch] || 0) + 1;
+
+    // 1) Merk eers groen
+    for (let i = 0; i < wordLength; i++) {
+      const g = guess[i];
+      if (g === target[i]) {
+        res[i] = "correct";
+        counts[g]--;
+      }
+    }
+    // 2) Merk dan geel slegs as daar voorraad oor is
+    for (let i = 0; i < wordLength; i++) {
+      if (res[i] === "correct") continue;
+      const g = guess[i];
+      if (counts[g] > 0) {
+        res[i] = "present";
+        counts[g]--;
+      }
+    }
+    return res;
+  }
+
+  // --- Storage ---
   function loadStatsFromStorage() {
     const saved = localStorage.getItem("woordStats");
     if(saved) {
       try {
         const parsed = JSON.parse(saved);
-        if(parsed && typeof parsed === "object") {
-          stats = parsed;
-        }
-      } catch(e) {
-        // ignore
-      }
+        if(parsed && typeof parsed === "object") stats = parsed;
+      } catch {}
     }
   }
-
-  // --- Stoor stats in localStorage ---
   function saveStatsToStorage() {
     localStorage.setItem("woordStats", JSON.stringify(stats));
   }
-
-  // --- Laai speletjie state (pogings) ---
   function loadGameFromStorage() {
     const todayStr = new Date().toDateString();
     const savedDate = localStorage.getItem("woordPogingsDatum");
-    if(savedDate !== todayStr) {
+    if (savedDate !== todayStr) {
       localStorage.removeItem("woordPogings");
       localStorage.setItem("woordPogingsDatum", todayStr);
       guesses = [];
@@ -442,49 +481,36 @@
       guesses = savedGuesses ? JSON.parse(savedGuesses) : [];
     }
   }
-
-  // --- Stoor pogings ---
   function saveGameToStorage() {
     localStorage.setItem("woordPogings", JSON.stringify(guesses));
     localStorage.setItem("woordPogingsDatum", new Date().toDateString());
   }
 
-  // --- Maak bord ---
+  // --- UI bou ---
   function createBoard() {
     board.innerHTML = "";
-    for(let i=0; i < maxGuesses * wordLength; i++) {
+    for (let i = 0; i < maxGuesses * wordLength; i++) {
       const tile = document.createElement("div");
       tile.classList.add("tile");
       board.appendChild(tile);
     }
   }
-
-  // --- Vertoon die raaiskote op bord ---
   function renderBoard() {
-    for(let i=0; i < maxGuesses; i++) {
-      const guess = guesses[i] || "";
-      for(let j=0; j < wordLength; j++) {
+    for (let i = 0; i < maxGuesses; i++) {
+      const guess = (guesses[i] || "").slice(0, wordLength);
+      const graded = i < guesses.length ? gradeGuess(guess, teikenWoord) : null;
+
+      for (let j = 0; j < wordLength; j++) {
         const tileIndex = i * wordLength + j;
         const tile = board.children[tileIndex];
         const letter = guess[j] || "";
         tile.textContent = letter.toUpperCase();
-        tile.className = "tile"; // reset klasses
-
-        if(i < guesses.length) {
-          // Gradeer letters
-          if(letter === teikenWoord[j]) {
-            tile.classList.add("correct");
-          } else if(teikenWoord.includes(letter)) {
-            tile.classList.add("present");
-          } else if(letter) {
-            tile.classList.add("absent");
-          }
-        }
+        tile.className = "tile"; // reset
+        if (graded) tile.classList.add(graded[j]); // correct/present/absent
       }
     }
   }
 
-  // --- Skep sleutelbord ---
   const keys = "qwertyuiopasdfghjklzxcvbnm".toUpperCase().split('');
   function createKeyboard() {
     keyboard.innerHTML = "";
@@ -494,138 +520,112 @@
       keyBtn.classList.add("key");
       keyBtn.setAttribute("aria-label", `Letter ${key}`);
       keyBtn.addEventListener("click", () => {
-        if(isGameOver) return;
-        if(guessInput.value.length < wordLength) {
+        if (isGameOver) return;
+        if (guessInput.value.length < wordLength) {
           guessInput.value += key.toLowerCase();
           guessInput.focus();
+          toggleSubmitState();
         }
       });
       keyboard.appendChild(keyBtn);
     });
-
-    // Enter knop
     const enterBtn = document.createElement("button");
     enterBtn.textContent = "Enter";
     enterBtn.classList.add("key", "special");
-    enterBtn.addEventListener("click", () => {
-      submitGuess();
-    });
+    enterBtn.addEventListener("click", submitGuess);
     keyboard.appendChild(enterBtn);
 
-    // Backspace knop
     const backBtn = document.createElement("button");
     backBtn.textContent = "Del";
     backBtn.classList.add("key", "special");
     backBtn.addEventListener("click", () => {
+      if (isGameOver) return;
       guessInput.value = guessInput.value.slice(0, -1);
       guessInput.focus();
+      toggleSubmitState();
     });
     keyboard.appendChild(backBtn);
   }
 
-  // --- Werk sleutelbord op volgens grade ---
   function updateKeyboard() {
     const allTiles = board.querySelectorAll(".tile");
-    const letterStatus = {}; // letter -> "correct"/"present"/"absent"
-    for(let tile of allTiles) {
+    const letterStatus = {};
+    for (let tile of allTiles) {
       const letter = tile.textContent.toLowerCase();
-      if(!letter) continue;
-      if(tile.classList.contains("correct")) {
+      if (!letter) continue;
+      if (tile.classList.contains("correct")) {
         letterStatus[letter] = "correct";
-      } else if(tile.classList.contains("present")) {
-        if(letterStatus[letter] !== "correct") {
-          letterStatus[letter] = "present";
-        }
-      } else if(tile.classList.contains("absent")) {
-        if(!letterStatus[letter]) {
-          letterStatus[letter] = "absent";
-        }
+      } else if (tile.classList.contains("present")) {
+        if (letterStatus[letter] !== "correct") letterStatus[letter] = "present";
+      } else if (tile.classList.contains("absent")) {
+        if (!letterStatus[letter]) letterStatus[letter] = "absent";
       }
     }
     keyboard.querySelectorAll(".key").forEach(keyBtn => {
       const letter = keyBtn.textContent.toLowerCase();
       keyBtn.classList.remove("correct", "present", "absent");
-      if(letterStatus[letter]) {
-        keyBtn.classList.add(letterStatus[letter]);
-      }
+      if (letterStatus[letter]) keyBtn.classList.add(letterStatus[letter]);
     });
   }
 
-  // --- Slegs letters toelaat ---
+  // --- Invoer ---
   guessInput.addEventListener("input", () => {
     guessInput.value = guessInput.value.replace(/[^a-zA-Z]/g, "").slice(0, wordLength).toLowerCase();
+    toggleSubmitState();
+  });
+  guessInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") submitGuess();
   });
 
-  // --- Boodskap funksie ---
-  function showMessage(msg, duration=3000) {
-    messageDiv.textContent = msg;
-    if(duration > 0) {
-      setTimeout(() => {
-        if(messageDiv.textContent === msg) {
-          messageDiv.textContent = "";
-        }
-      }, duration);
-    }
-  }
-
-  // --- Voer raaiskoot in ---
   function submitGuess() {
-    if(isGameOver) return;
+    if (isGameOver) return;
     const guess = guessInput.value.toLowerCase();
-    if(guess.length !== wordLength) {
+    if (guess.length !== wordLength) {
       showMessage(`Woorde moet presies ${wordLength} letters wees`);
       return;
     }
-    if(!woordLys.includes(guess)) {
+    if (!WORDS5.includes(guess)) { // net 5-letter woorde geldig
       showMessage("Woord nie in lys nie");
       return;
     }
-    if(guesses.length >= maxGuesses) {
+    if (guesses.length >= maxGuesses) {
       showMessage("Jy het al jou pogings gebruik");
       return;
     }
+
     guesses.push(guess);
     saveGameToStorage();
     renderBoard();
     updateKeyboard();
     guessInput.value = "";
+    toggleSubmitState();
     guessInput.focus();
 
-    if(guess === teikenWoord) {
+    if (guess === teikenWoord) {
       showMessage("🎉 Jy het gewen!");
       endGame(true);
-    } else if(guesses.length >= maxGuesses) {
-      showMessage(`Game oor! Die woord was: ${teikenWoord.toUpperCase()}`, 10000);
+    } else if (guesses.length >= maxGuesses) {
+      showMessage(`Game oor! Die woord was: ${teikenWoord.toUpperCase()}`, 8000);
       endGame(false);
     }
   }
 
-  submitBtn.addEventListener("click", submitGuess);
-
-  guessInput.addEventListener("keydown", e => {
-    if(e.key === "Enter") {
-      submitGuess();
-    }
-  });
-
-  // --- Spel afhandeling ---
   function endGame(won) {
     isGameOver = true;
+    toggleSubmitState();
     updateStats(won);
   }
 
-  // --- Statistiek werk op ---
+  // --- Statistiek ---
   function updateStats(won) {
     const todayStr = new Date().toDateString();
-    if(stats.lastPlayDate !== todayStr) {
+    if (stats.lastPlayDate !== todayStr) {
       stats.total++;
       stats.lastPlayDate = todayStr;
-      if(won) {
+      if (won) {
         stats.wins++;
         stats.currentStreak++;
-        if(stats.currentStreak > stats.bestStreak) {
-          stats.bestStreak = stats.currentStreak;
-        }
+        if (stats.currentStreak > stats.bestStreak) stats.bestStreak = stats.currentStreak;
         const pogingsCount = guesses.length;
         stats.distribution[pogingsCount] = (stats.distribution[pogingsCount] || 0) + 1;
       } else {
@@ -636,7 +636,6 @@
     }
   }
 
-  // --- Statistiek UI opdateer ---
   function updateSidebarStatsUI() {
     totalPlayedSpan.textContent = stats.total;
     winRateSpan.textContent = stats.total === 0 ? "0%" : Math.round((stats.wins / stats.total) * 100) + "%";
@@ -645,31 +644,30 @@
     lastPlayDateSpan.textContent = stats.lastPlayDate || "Nog nie";
 
     distributionBarsDiv.innerHTML = "";
+    const vals = Object.values(stats.distribution);
+    const maxCount = Math.max(1, ...(vals.length ? vals : [0]));
 
-    const maxCount = Math.max(...Object.values(stats.distribution), 1);
-
-    for(let i = 1; i <= maxGuesses; i++) {
+    for (let i = 1; i <= maxGuesses; i++) {
       const count = stats.distribution[i] || 0;
-      const percentage = stats.total === 0 ? 0 : Math.round((count / stats.total) * 100);
+      const widthPct = Math.max(8, (count / maxCount) * 100); // min 8%
       const bar = document.createElement("div");
       bar.className = "bar";
-      bar.style.width = (percentage * 2) + "px"; // Breedte skaal
-      bar.textContent = `${i} poging(s): ${count} (${percentage}%)`;
+      bar.style.width = widthPct + "%";
+      bar.textContent = `${i} poging(s): ${count}`;
       distributionBarsDiv.appendChild(bar);
     }
   }
 
-  // --- Woordlys in sidebar ---
   function updateSidebarWoorde() {
     woordLysDiv.innerHTML = "";
-    woordLys.forEach(w => {
+    WORDS5.forEach(w => {
       const span = document.createElement("span");
       span.textContent = w.toUpperCase();
       woordLysDiv.appendChild(span);
     });
   }
 
-  // --- Hamburger menu open/sluit ---
+  // --- Hamburger ---
   function openSidebar() {
     sidebar.classList.add("open");
     sidebar.setAttribute("aria-hidden", "false");
@@ -681,14 +679,10 @@
     hamburger.setAttribute("aria-expanded", "false");
   }
   hamburger.addEventListener("click", () => {
-    if(sidebar.classList.contains("open")) {
-      closeSidebar();
-    } else {
-      openSidebar();
-    }
+    sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
   });
   hamburger.addEventListener("keydown", e => {
-    if(e.key === "Enter" || e.key === " ") {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       hamburger.click();
     }
@@ -697,21 +691,18 @@
 
   // --- Deel resultate ---
   function getResultText() {
-    let result = `Woord van die Dag 🇿🇦\nEk het die woord "${teikenWoord.toUpperCase()}" probeer raai in ${guesses.length} poging(e):\n\n`;
-    guesses.forEach((g, idx) => {
+    // Gebruik korrekte gradeer-logika en wys net blokkies (geen verkeerde “oranje” meer)
+    let result = `Woord van die Dag 🇿🇦\nPogings: ${guesses.length}/${maxGuesses}\n\n`;
+    guesses.forEach(g => {
+      const grades = gradeGuess(g, teikenWoord);
       let line = "";
-      for(let i=0; i < wordLength; i++) {
-        const letter = g[i];
-        if(letter === teikenWoord[i]) {
-          line += "🟩";
-        } else if(teikenWoord.includes(letter)) {
-          line += "🟨";
-        } else {
-          line += "⬜";
-        }
+      for (let s of grades) {
+        line += (s === "correct") ? "🟩" : (s === "present") ? "🟨" : "⬜";
       }
-      result += `${line} (${g.toUpperCase()})\n`;
+      result += line + "\n";
     });
+    // (Opsioneel) Moenie die antwoord verklap nie
+    // result += `\nAntwoord: ${teikenWoord.toUpperCase()}\n`;
     result += `\nSpeel Woord van die Dag elke dag!`;
     return result;
   }
@@ -730,23 +721,22 @@
     window.open(`https://wa.me/?text=${resultText}`, "_blank");
   });
 
-  // --- Stats modal open/sluit ---
+  // --- Modal ---
   practiceBtn.addEventListener("click", () => {
-    // Sluit sidebar
     closeSidebar();
-
-    // Toon modal met statistiek
     statsModal.classList.add("open");
     statsModal.focus();
     updateStatsModal();
   });
-
   statsCloseBtn.addEventListener("click", () => {
     statsModal.classList.remove("open");
   });
-
   statsModal.addEventListener("click", e => {
-    if(e.target === statsModal) {
+    if (e.target === statsModal) statsModal.classList.remove("open");
+  });
+  // sluit met Escape
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape" && statsModal.classList.contains("open")) {
       statsModal.classList.remove("open");
     }
   });
@@ -761,30 +751,30 @@
     `;
 
     distributionBarsModal.innerHTML = "";
-    const maxCount = Math.max(...Object.values(stats.distribution), 1);
-    for(let i = 1; i <= maxGuesses; i++) {
+    const vals = Object.values(stats.distribution);
+    const maxCount = Math.max(1, ...(vals.length ? vals : [0]));
+    for (let i = 1; i <= maxGuesses; i++) {
       const count = stats.distribution[i] || 0;
-      const percentage = stats.total === 0 ? 0 : Math.round((count / stats.total) * 100);
+      const widthPct = Math.max(8, (count / maxCount) * 100);
       const bar = document.createElement("div");
       bar.className = "bar";
-      bar.style.width = (percentage * 3) + "px"; // Bietjie wyer in modal
-      bar.textContent = `${i} poging(s): ${count} (${percentage}%)`;
+      bar.style.width = widthPct + "%"; // wyer in modal hang nou net van houer af
+      bar.textContent = `${i} poging(s): ${count}`;
       distributionBarsModal.appendChild(bar);
     }
   }
 
-  // --- Statistiek invoer/uitvoer ---
+  // --- Import/Export ---
   exportBtn.addEventListener("click", () => {
     const dataStr = JSON.stringify(stats, null, 2);
     alert("Kopieer jou statistiek data:\n\n" + dataStr);
   });
-
   importBtn.addEventListener("click", () => {
     const input = prompt("Plak jou statistiek data hier:");
-    if(input) {
+    if (input) {
       try {
         const imported = JSON.parse(input);
-        if(imported && typeof imported === "object") {
+        if (imported && typeof imported === "object") {
           stats = imported;
           saveStatsToStorage();
           updateSidebarStatsUI();
@@ -798,7 +788,7 @@
     }
   });
 
-  // --- Inisialiseer alles ---
+  // --- Init ---
   function init() {
     loadStatsFromStorage();
     loadGameFromStorage();
@@ -808,13 +798,15 @@
     updateKeyboard();
     updateSidebarStatsUI();
     updateSidebarWoorde();
+    toggleSubmitState();
     guessInput.focus();
   }
-
   init();
 
 })();
 </script>
+
+
 
 </body>
 </html>
