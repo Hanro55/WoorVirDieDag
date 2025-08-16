@@ -2,370 +2,342 @@
 <html lang="af">
 <head>
   <meta charset="UTF-8" />
-  <title>Woord van die Dag</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Woord van die Dag</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f3f4f6;
-      --text: #111;
+      --tile-bg: #fff;
+      --tile-border: #ccc;
       --correct: #6aaa64;
       --present: #c9b458;
       --absent: #787c7e;
-      --invalid: #e74c3c;
-      --block: #fff;
-      --border: #d3d6da;
-      --green: #4caf50;
-    }
-
-    [data-theme="dark"] {
-      --bg: #121212;
-      --text: #fff;
-      --block: #1e1e1e;
-      --border: #444;
+      --error: #ff4d4f;
     }
 
     body {
-      font-family: sans-serif;
-      background: var(--bg);
-      color: var(--text);
       margin: 0;
-      text-align: center;
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    .game {
-      max-width: 500px;
-      margin: auto;
-      padding: 20px;
+    h1 {
+      margin: 20px 0 10px;
     }
 
-    .grid {
+    #game {
       display: grid;
-      grid-template-columns: repeat(5, 60px);
-      gap: 8px;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 5px;
+    }
+
+    .row {
+      display: flex;
       justify-content: center;
-      margin-bottom: 15px;
     }
 
     .tile {
-      width: 60px;
-      height: 60px;
-      border: 2px solid var(--border);
-      line-height: 60px;
-      font-size: 24px;
+      width: 50px;
+      height: 50px;
+      margin: 3px;
+      background: var(--tile-bg);
+      border: 2px solid var(--tile-border);
       text-transform: uppercase;
-      font-weight: bold;
-      border-radius: 8px;
-      background: var(--block);
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 5px;
     }
 
-    .invalid {
-      border-color: var(--invalid);
-      color: var(--invalid);
+    .tile.correct { background: var(--correct); color: white; border: none; }
+    .tile.present { background: var(--present); color: white; border: none; }
+    .tile.absent  { background: var(--absent);  color: white; border: none; }
+    .tile.error   { border: 2px solid var(--error); }
+
+    #keyboard {
+      margin: 20px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      user-select: none;
     }
 
-    .correct { background: var(--correct); color: #fff; }
-    .present { background: var(--present); color: #fff; }
-    .absent { background: var(--absent); color: #fff; }
-
-    input {
-      font-size: 18px;
-      padding: 8px;
-      width: 60%;
-      margin-top: 10px;
-      border-radius: 8px;
-    }
-
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      margin: 5px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .share-buttons {
+    .key-row {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
+      gap: 6px;
     }
 
-    .hamburger {
-      position: absolute;
-      left: 10px;
-      top: 10px;
-      font-size: 28px;
+    .key {
+      padding: 10px 14px;
+      font-size: 1.1rem;
+      background: #ddd;
+      border-radius: 5px;
       cursor: pointer;
     }
 
-    .sidebar {
-      position: fixed;
-      top: 0; left: -250px;
-      width: 250px;
-      height: 100%;
-      background: var(--block);
-      box-shadow: 2px 0 5px rgba(0,0,0,0.3);
-      padding: 20px;
-      transition: left 0.3s ease;
-      z-index: 10;
+    .key:hover {
+      background: #ccc;
     }
 
-    .sidebar.open {
+    #message {
+      color: var(--error);
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    #statsModal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #statsContent {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .bar {
+      height: 20px;
+      background: var(--correct);
+      margin: 4px 0;
+      border-radius: 4px;
+    }
+
+    #hamburger {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: -250px;
+      width: 250px;
+      height: 100%;
+      background: white;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+      padding: 20px;
+      transition: left 0.3s ease-in-out;
+    }
+
+    #sidebar.show {
       left: 0;
     }
 
-    .sidebar button {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      z-index: 5;
-    }
-
-    .overlay.show {
+    #sidebar a {
       display: block;
+      margin: 15px 0;
+      text-decoration: none;
+      color: #333;
     }
 
-    #statsPopup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-50%);
-      background: var(--block);
-      padding: 20px;
-      border-radius: 10px;
-      display: none;
-      z-index: 20;
-      text-align: left;
-    }
-
-    canvas {
-      margin-top: 10px;
-      max-width: 100%;
-    }
-
-    .mode-toggle {
-      position: fixed;
-      right: 10px;
-      top: 10px;
+    @media screen and (max-width: 600px) {
+      .tile { width: 40px; height: 40px; font-size: 1.5rem; }
     }
   </style>
 </head>
 <body>
-  <div class="hamburger" onclick="toggleMenu()">☰</div>
-  <div class="mode-toggle">
-    <button onclick="toggleMode()">🌓</button>
-  </div>
 
-  <div class="overlay" id="overlay" onclick="closeMenu()"></div>
-  <div class="sidebar" id="sidebar">
-    <h3>Menu</h3>
-    <button onclick="showStats()">📊 Statistiek</button>
-    <button onclick="exportStats()">⬇️ Voer Uit</button>
-    <button onclick="importStats()">⬆️ Voer In</button>
-    <button onclick="enterPracticeMode()">🧪 Oefenmodus</button>
-  </div>
+<div id="hamburger" onclick="toggleSidebar()">☰</div>
 
-  <div class="game">
-    <h1>Woord van die Dag</h1>
-    <div id="board"></div>
-    <input type="text" id="guessInput" maxlength="5" placeholder="Raai woord..." oninput="checkValid(this.value)">
-    <br>
-    <button onclick="submitGuess()">Dien In</button>
+<div id="sidebar">
+  <a href="#" onclick="showStats()">📊 Statistiek</a>
+  <a href="#">🔁 Voer uit / in</a>
+  <a href="#">🧪 Oefenmodus</a>
+</div>
 
-    <div class="share-buttons">
-      <button onclick="copyGuess()">📋 Kopieer</button>
-      <button onclick="shareWhatsApp()">📤 Deel op WhatsApp</button>
-    </div>
-  </div>
+<h1>Woord van die Dag</h1>
+<div id="game"></div>
+<div id="keyboard"></div>
+<div id="message"></div>
 
-  <div id="statsPopup">
-    <h3>Jou Statistiek</h3>
-    <p id="statText"></p>
-    <canvas id="statChart" width="300" height="150"></canvas>
-    <br>
+<div id="statsModal">
+  <div id="statsContent">
+    <h2>Jou Statistiek</h2>
+    <div id="stats"></div>
     <button onclick="closeStats()">Sluit</button>
   </div>
+</div>
 
-  <script>
-    let words = ["motor", "stoel", "vleis", "appel", "plaas"];
-    let today = new Date().toISOString().split("T")[0];
-    let dailyWord = words.sort().reverse()[new Date().getDate() % words.length];
-    let attempts = [];
-    let maxGuesses = 6;
-    let currentGuess = 0;
-    let stats = JSON.parse(localStorage.getItem("stats")) || { played: 0, win: 0, streak: 0, history: [] };
+<script>
+  const today = new Date().toISOString().split('T')[0];
+  const allWords = ["water", "vloer", "ligte", "venyn", "plane", "stoep", "kamer"];
+  const wordOfTheDay = allWords[new Date().getDate() % allWords.length];
 
-    const board = document.getElementById("board");
-    const input = document.getElementById("guessInput");
+  let currentRow = 0;
+  let currentGuess = "";
+  let guesses = [];
+  let gameOver = false;
 
-    function initBoard() {
-      board.innerHTML = "";
-      for (let i = 0; i < maxGuesses; i++) {
-        const row = document.createElement("div");
-        row.className = "grid";
-        for (let j = 0; j < 5; j++) {
-          const cell = document.createElement("div");
-          cell.className = "tile";
-          row.appendChild(cell);
-        }
-        board.appendChild(row);
+  const game = document.getElementById("game");
+  const keyboard = document.getElementById("keyboard");
+  const message = document.getElementById("message");
+
+  function buildGrid() {
+    for (let i = 0; i < 6; i++) {
+      const row = document.createElement("div");
+      row.className = "row";
+      for (let j = 0; j < 5; j++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.id = `tile-${i}-${j}`;
+        row.appendChild(tile);
       }
+      game.appendChild(row);
     }
+  }
 
-    function checkValid(word) {
-      input.classList.remove("invalid");
-      if (word.length === 5 && !words.includes(word)) {
-        input.classList.add("invalid");
-      }
-    }
-
-    function submitGuess() {
-      const guess = input.value.toLowerCase();
-      if (guess.length !== 5 || !words.includes(guess)) {
-        alert("Ongeldige woord!");
-        return;
-      }
-
-      const row = board.children[currentGuess].children;
-      for (let i = 0; i < 5; i++) {
-        row[i].textContent = guess[i];
-        if (guess[i] === dailyWord[i]) {
-          row[i].classList.add("correct");
-        } else if (dailyWord.includes(guess[i])) {
-          row[i].classList.add("present");
-        } else {
-          row[i].classList.add("absent");
-        }
-      }
-
-      attempts.push(guess);
-      currentGuess++;
-
-      if (guess === dailyWord || currentGuess === maxGuesses) {
-        input.disabled = true;
-        setTimeout(() => showStats(), 500);
-        saveStats(guess === dailyWord);
-      }
-
-      input.value = "";
-    }
-
-    function showStats() {
-      const popup = document.getElementById("statsPopup");
-      const text = document.getElementById("statText");
-      text.innerHTML = `
-        Gespeel: ${stats.played}<br>
-        Gewen: ${stats.win}<br>
-        Huidige Reeks: ${stats.streak}
-      `;
-
-      const ctx = document.getElementById("statChart").getContext("2d");
-      if (window.chart) window.chart.destroy();
-      window.chart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: stats.history.map((_, i) => i + 1),
-          datasets: [{
-            label: "Pogings",
-            data: stats.history,
-            backgroundColor: "#4caf50"
-          }]
-        }
+  function buildKeyboard() {
+    const rows = ["qwertyuiop", "asdfghjkl", "⌫zxcvbnm⏎"];
+    rows.forEach(row => {
+      const rowDiv = document.createElement("div");
+      rowDiv.className = "key-row";
+      row.split('').forEach(key => {
+        const keyDiv = document.createElement("div");
+        keyDiv.className = "key";
+        keyDiv.textContent = key === "⏎" ? "Enter" : key === "⌫" ? "Back" : key;
+        keyDiv.onclick = () => handleKey(key);
+        rowDiv.appendChild(keyDiv);
       });
+      keyboard.appendChild(rowDiv);
+    });
+  }
 
-      popup.style.display = "block";
-    }
-
-    function saveStats(won) {
-      stats.played++;
-      if (won) {
-        stats.win++;
-        stats.streak++;
-        stats.history.push(currentGuess);
-      } else {
-        stats.streak = 0;
-        stats.history.push(maxGuesses);
+  function handleKey(key) {
+    if (gameOver) return;
+    if (key === "⏎") return submitGuess();
+    if (key === "⌫") {
+      if (currentGuess.length > 0) {
+        currentGuess = currentGuess.slice(0, -1);
+        updateTiles();
       }
-      localStorage.setItem("stats", JSON.stringify(stats));
+      return;
+    }
+    if (currentGuess.length < 5 && /^[a-z]$/i.test(key)) {
+      currentGuess += key;
+      updateTiles();
+    }
+  }
+
+  function updateTiles() {
+    for (let i = 0; i < 5; i++) {
+      const tile = document.getElementById(`tile-${currentRow}-${i}`);
+      tile.textContent = currentGuess[i] ? currentGuess[i].toUpperCase() : "";
+    }
+  }
+
+  function submitGuess() {
+    if (currentGuess.length !== 5) {
+      showMessage("Woorde moet 5 letters lank wees.");
+      return;
+    }
+    if (!allWords.includes(currentGuess.toLowerCase())) {
+      showMessage("Onbekende woord!");
+      markInvalid();
+      return;
     }
 
-    function closeStats() {
-      document.getElementById("statsPopup").style.display = "none";
+    checkGuess();
+    guesses.push(currentGuess);
+    currentGuess = "";
+    currentRow++;
+
+    if (currentRow === 6 || gameOver) {
+      setTimeout(() => {
+        showStats();
+      }, 500);
+    }
+  }
+
+  function checkGuess() {
+    const guess = currentGuess.toLowerCase();
+    const word = wordOfTheDay.toLowerCase();
+
+    for (let i = 0; i < 5; i++) {
+      const tile = document.getElementById(`tile-${currentRow}-${i}`);
+      tile.textContent = guess[i].toUpperCase();
+      tile.classList.remove("error");
+
+      if (guess[i] === word[i]) {
+        tile.classList.add("correct");
+      } else if (word.includes(guess[i])) {
+        tile.classList.add("present");
+      } else {
+        tile.classList.add("absent");
+      }
     }
 
-    function copyGuess() {
-      navigator.clipboard.writeText(`Ek het Woord van die Dag in ${currentGuess} pogings voltooi!`);
-      alert("Gekopieer!");
+    if (guess === word) {
+      gameOver = true;
+      showMessage("Goed gedoen!");
+    } else if (currentRow === 5) {
+      gameOver = true;
+      showMessage("Jammer! Die woord was: " + word.toUpperCase());
     }
+  }
 
-    function shareWhatsApp() {
-      const msg = encodeURIComponent(`Ek het Woord van die Dag in ${currentGuess} pogings voltooi!`);
-      window.open(`https://wa.me/?text=${msg}`, "_blank");
+  function showMessage(msg) {
+    message.textContent = msg;
+    setTimeout(() => message.textContent = "", 2000);
+  }
+
+  function markInvalid() {
+    for (let i = 0; i < 5; i++) {
+      const tile = document.getElementById(`tile-${currentRow}-${i}`);
+      tile.classList.add("error");
     }
+  }
 
-    function toggleMenu() {
-      document.getElementById("sidebar").classList.toggle("open");
-      document.getElementById("overlay").classList.toggle("show");
-    }
+  function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("show");
+  }
 
-    function closeMenu() {
-      document.getElementById("sidebar").classList.remove("open");
-      document.getElementById("overlay").classList.remove("show");
-    }
+  function showStats() {
+    const statsDiv = document.getElementById("stats");
+    statsDiv.innerHTML = "";
+    const bars = guesses.map((g, i) => `<div class="bar" style="width: ${(6 - i) * 15 + 30}%;">Poging ${i + 1}: ${g.toUpperCase()}</div>`).join("");
+    statsDiv.innerHTML = bars;
+    document.getElementById("statsModal").style.display = "flex";
+  }
 
-    function toggleMode() {
-      const theme = document.documentElement.getAttribute("data-theme");
-      document.documentElement.setAttribute("data-theme", theme === "dark" ? "light" : "dark");
-    }
+  function closeStats() {
+    document.getElementById("statsModal").style.display = "none";
+  }
 
-    function exportStats() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(stats));
-      const a = document.createElement("a");
-      a.setAttribute("href", dataStr);
-      a.setAttribute("download", "woord_stats.json");
-      a.click();
-    }
+  buildGrid();
+  buildKeyboard();
 
-    function importStats() {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ".json";
-      input.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            stats = JSON.parse(reader.result);
-            localStorage.setItem("stats", JSON.stringify(stats));
-            alert("Statistiek ingevoer!");
-          } catch {
-            alert("Ongeldige lêer!");
-          }
-        };
-        reader.readAsText(file);
-      };
-      input.click();
-    }
+  // Opsionele: Beperk tot een poging per dag
+  if (localStorage.getItem("played-" + today)) {
+    showMessage("Jy het al vandag gespeel.");
+    gameOver = true;
+    showStats();
+  } else {
+    window.addEventListener("beforeunload", () => {
+      if (guesses.length > 0) {
+        localStorage.setItem("played-" + today, "true");
+      }
+    });
+  }
 
-    function enterPracticeMode() {
-      dailyWord = prompt("Voer 'n vorige woord in:");
-      attempts = [];
-      currentGuess = 0;
-      input.disabled = false;
-      initBoard();
-    }
-
-    initBoard();
-  </script>
-
-  <!-- Chart.js vir grafiek -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</script>
 </body>
 </html>
+
