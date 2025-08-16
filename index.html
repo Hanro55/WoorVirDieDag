@@ -350,42 +350,43 @@ function stoorStats(wen) {
     stats.laaste = datumSleutel;
     localStorage.setItem("woordStats", JSON.stringify(stats));
   }
-  wysStats();
-}
+  stoorStats(true);  // of false
+// ↓ word gevolg deur
+wysStats(); // wys nou mooi popup!
 
 function wysStats() {
   const stats = JSON.parse(localStorage.getItem("woordStats") || "{}");
   stats.pogingTelling = stats.pogingTelling || {};
- let pogingData = "<ul style='list-style:none; padding:0;'>";
 
-for (let i = 1; i <= 6; i++) {
-  const keer = stats.pogingTelling[i] || 0;
-  const breedte = keer * 10; // elke een = 10px
-  pogingData += `
-    <li>
-      Poging ${i}:
-      <div style="display:inline-block; background:#6aaa64; height:15px; width:${breedte}px;"></div> (${keer})
-    </li>
-  `;
-}
-
-pogingData += "</ul>";
-
-  statsDiv.innerHTML = `
-    <p>Gespeel: ${stats.gespeel || 0}</p>
-    <p>Gewen: ${stats.wen || 0}</p>
-    <p>Streek: ${stats.streek || 0}</p>
-    <p>Laas gespeel: ${stats.laaste || "Nog nie"}</p>
-    ${pogingData}
-  `;
-  const vandag = new Date().toDateString();
-  if (stats.laaste === vandag) {
-    reedsGespeelVandag = true;
-    invoer.disabled = true;
-    boodskap.textContent = "Jy het reeds vandag gespeel!";
-    const voerInKnoppie = document.querySelector('button[onclick="stuurRaaiskoot()"]');
-    if (voerInKnoppie) voerInKnoppie.disabled = true;
+  let pogingData = "<ul style='list-style:none; padding:0;'>";
+  for (let i = 1; i <= 6; i++) {
+    const keer = stats.pogingTelling[i] || 0;
+    const breedte = keer * 10;
+    pogingData += `
+      <li>
+        Poging ${i}:
+        <div style="display:inline-block; background:#6aaa64; height:15px; width:${breedte}px; border-radius:4px;"></div> (${keer})
+      </li>
+    `;
   }
+  pogingData += "</ul>";
+
+  const suksesKoers = stats.gespeel ? Math.round((stats.wen || 0) / stats.gespeel * 100) : 0;
+
+  document.getElementById("popup-inhoud").innerHTML = `
+    <h2>📊 Jou Statistiek</h2>
+    <p>Gespeel: <strong>${stats.gespeel || 0}</strong></p>
+    <p>Gewen: <strong>${stats.wen || 0}</strong></p>
+    <p>Streek: <strong>${stats.streek || 0}</strong></p>
+    <p>Sukseskoers: <strong>${suksesKoers}%</strong></p>
+    ${pogingData}
+    <button onclick="deelResultaat()" style="margin-top:10px; background:#0077cc;">📤 Deel jou poging</button>
+    <br><br>
+    <button onclick="sluitPopup()" style="background:#777;">Sluit</button>
+  `;
+
+  // Wys die popup
+  document.getElementById("statistiekPopup").style.display = "block";
 }
 
 function deelResultaat() {
@@ -526,6 +527,9 @@ function deelOpFacebook() {
   document.getElementById("dagKeuse").setAttribute("max", vandag);
 });
 
+function sluitPopup() {
+  document.getElementById("statistiekPopup").style.display = "none";
+}
 
 </script>
 
@@ -546,5 +550,18 @@ function deelOpFacebook() {
     Loading…
   </iframe>
 </section>
+  <div id="statistiekPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+  <div id="popup-inhoud" style="background:white; color:#333; max-width:400px; padding:20px; border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.3); animation: popUpAnim 0.4s ease;">
+    <!-- Statistiek kom hier -->
+  </div>
+</div>
+
+<style>
+@keyframes popUpAnim {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+
 </body>
 </html>
