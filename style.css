@@ -1,0 +1,144 @@
+/* Basiese styl vir die speletjie */
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
+  text-align: center;
+  padding-top: 60px;
+}
+
+h1 {
+  font-size: 2.2em;
+  color: #222;
+  margin-bottom: 20px;
+}
+
+#menu-icon {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  font-size: 30px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: -220px;
+  width: 200px;
+  height: 100%;
+  background: #222;
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+  transition: left 0.3s ease;
+  z-index: 9;
+}
+
+#sidebar.open {
+  left: 0;
+}
+
+#sidebar button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  background: #444;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.popup {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  z-index: 20;
+}
+
+.popup.hidden {
+  display: none;
+}
+
+#game-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  justify-content: center;
+  max-width: 300px;
+  margin: 0 auto 20px auto;
+}
+
+.tile {
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  border-radius: 8px;
+  background: white;
+  border: 2px solid #ccc;
+  line-height: 50px;
+}
+
+.invalid {
+  background-color: #ffcdd2;
+  color: red;
+}
+
+.correct {
+  background-color: #66bb6a;
+  color: white;
+}
+
+.present {
+  background-color: #ffee58;
+  color: black;
+}
+
+.absent {
+  background-color: #b0bec5;
+  color: white;
+}
+
+#keyboard {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #e0e0e0;
+  padding: 10px 0;
+}
+
+.key-row {
+  display: flex;
+  justify-content: center;
+  margin: 5px 0;
+}
+
+.key {
+  flex: 1;
+  max-width: 40px;
+  margin: 0 2px;
+  padding: 10px 0;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  background: #bbb;
+  color: black;
+  cursor: pointer;
+}
+
+.key#enter,
+.key#back {
+  max-width: 60px;
+}
