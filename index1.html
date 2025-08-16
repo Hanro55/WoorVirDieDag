@@ -85,20 +85,21 @@
     background-color: #519e50;
   }
 
-  /* Statistiek staafgrafieke */
-  #distribution-bars div.bar,
-  #distribution-bars-modal div.bar {
-    background-color: #6aaa64;
-    color: white;
-    padding: 4px 8px;
-    margin: 6px 0;
-    border-radius: 12px;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
+/* Statistiek staafgrafieke */
+#distribution-bars div.bar,
+#distribution-bars-modal div.bar {
+  background-color: #6aaa64;
+  color: white;
+  padding: 4px 8px;
+  margin: 6px 0;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 
   /* Woorde lys */
   #woord-lys {
@@ -240,11 +241,11 @@
   /* Deel-knoppies onder die inset */
   #share-row { text-align: center; margin: 8px auto 20px auto; }
   .action-btn {
-    padding: 10px 14px; border: none; border-radius: 8px;
-    background-color: #6aaa64; color: #fff; cursor: pointer; margin: 4px 6px;
+  padding: 10px 14px; border: none; border-radius: 8px;
+  background-color: #6aaa64; color: #fff; cursor: pointer; margin: 4px 6px;
   }
   .action-btn:disabled { 
-    background-color: #a5d6a7; cursor: not-allowed; 
+  background-color: #a5d6a7; cursor: not-allowed; 
   }
 
   /* Modal style */
@@ -331,6 +332,7 @@
   <button id="wa-share-btn" class="action-btn" disabled>💬 WhatsApp</button>
 </div>
   
+
 <!-- Sleutelbord -->
 <div id="keyboard" aria-label="Virtuele sleutelbord"></div>
 
@@ -345,16 +347,57 @@
     <button id="whatsapp-share">💬 Deel via WhatsApp</button>
   </div>
 </div>
-
 <script>
 (() => {
   "use strict";
 
   // --- Konfig --- 
   const maxGuesses = 6;
-  const teikenWoord = "PLANT"; // Vervang met die daaglikse woord
-  
-  // --- Elemente --- 
+  const wordLength = 5;
+
+  // --- Woordlys (joune) ---
+  const woordlys = [
+    "afrik", "beter", "klein", "woord", "speel", "skryf", "huisn", "vandag", "klank",
+    "smaak", "maanl", "vraas", "ligte", "vlugte", "stuur", "kykna", "blywe", "groot", "dinge", "skool"
+  ];
+
+  // Net 5-letter woorde vir target én validasie
+  const WORDS5 = woordlys.filter(w => w.length === wordLength);
+
+  // --- Seeded shuffle --- 
+  function seededRandom(seed) {
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+  function shuffleArraySeeded(arr, seed) {
+    let a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom(seed + i) * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  function kryVandagWoord() {
+    const vandag = new Date();
+    const mm = String(vandag.getMonth() + 1).padStart(2, "0");
+    const dd = String(vandag.getDate()).padStart(2, "0");
+    const datumString = `${vandag.getFullYear()}-${mm}-${dd}`;
+    let seed = 0;
+    for (let i = 0; i < datumString.length; i++) {
+      seed += datumString.charCodeAt(i);
+    }
+    const geskommelde = shuffleArraySeeded(WORDS5, seed);
+    return geskommelde[0] || "woord"; // fallback
+  }
+
+  const teikenWoord = kryVandagWoord();
+
+  // --- DOM ---
+  const board = document.getElementById("board");
+  const guessInput = document.getElementById("guess-input");
+  const submitBtn = document.getElementById("submit-btn");
+  const message = document.getElementById("message");
+  const keyboard = document.getElementById("keyboard");
   const sidebar = document.getElementById("sidebar");
   const hamburger = document.getElementById("hamburger");
   const closeSidebarBtn = document.getElementById("close-sidebar");
@@ -369,14 +412,14 @@
   const whatsappShareBtn = document.getElementById("whatsapp-share");
   const shareBtn = document.getElementById("share-btn");
   const waShareBtn = document.getElementById("wa-share-btn");
-  const guessInput = document.getElementById("guess-input");
-  const submitBtn = document.getElementById("submit-btn");
-  const board = document.getElementById("board");
-  const keyboard = document.getElementById("keyboard");
-  const messageEl = document.getElementById("message");
-  const woordLysEl = document.getElementById("woord-lys");
+  const totalPlayedUI = document.getElementById("total-played");
+  const winRateUI = document.getElementById("win-rate");
+  const currentStreakUI = document.getElementById("current-streak");
+  const bestStreakUI = document.getElementById("best-streak");
+  const lastPlayDateUI = document.getElementById("last-play-date");
+  const woordLysUI = document.getElementById("woord-lys");
 
-  // --- Data --- 
+  // --- Speltoestand ---
   let guesses = [];
   let stats = {
     total: 0,
@@ -387,7 +430,299 @@
     distribution: {}
   };
 
-  // --- Hamburger sidebar ---
+  // --- Maak die raaiskoot bord ---
+  function createBoard() {
+    board.innerHTML = "";
+    for (let i = 0; i < maxGuesses * wordLength; i++) {
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+      tile.setAttribute("aria-hidden", "true");
+      board.appendChild(tile);
+    }
+  }
+
+  // --- Render die bord met huidige raaiskote ---
+  function renderBoard() {
+    const tiles = board.querySelectorAll(".tile");
+    for (let i = 0; i < maxGuesses; i++) {
+      const guess = guesses[i] || "";
+      for (let j = 0; j < wordLength; j++) {
+        const idx = i * wordLength + j;
+        const tile = tiles[idx];
+        const letter = guess[j] || "";
+        tile.textContent = letter.toUpperCase();
+        tile.classList.remove("correct", "present", "absent");
+        if (i < guesses.length) {
+          const grades = gradeGuess(guess, teikenWoord);
+          if (grades[j]) {
+            tile.classList.add(grades[j]);
+          }
+        }
+      }
+    }
+  }
+
+  // --- Grade 'n raaiskoot ---
+  function gradeGuess(guess, target) {
+    let result = Array(wordLength).fill("absent");
+    let targetArr = target.split("");
+    let guessArr = guess.split("");
+
+    // Eerste: merk korrekte letters
+    for (let i = 0; i < wordLength; i++) {
+      if (guessArr[i] === targetArr[i]) {
+        result[i] = "correct";
+        targetArr[i] = null;
+        guessArr[i] = null;
+      }
+    }
+
+    // Dan: merk letters wat teenwoordig is maar verkeerd plek
+    for (let i = 0; i < wordLength; i++) {
+      if (guessArr[i] !== null) {
+        const idx = targetArr.indexOf(guessArr[i]);
+        if (idx > -1) {
+          result[i] = "present";
+          targetArr[idx] = null;
+        }
+      }
+    }
+    return result;
+  }
+
+  // --- Maak die virtuele sleutelbord ---
+  function createKeyboard() {
+    const letters = "QWERTYUIOPASDFGHJKLZXCVBNM";
+    keyboard.innerHTML = "";
+    for (const letter of letters) {
+      const key = document.createElement("button");
+      key.classList.add("key");
+      key.textContent = letter;
+      key.setAttribute("aria-label", letter);
+      key.addEventListener("click", () => handleKey(letter));
+      keyboard.appendChild(key);
+    }
+    // Voeg spesiale knoppies vir delete en enter
+    const delKey = document.createElement("button");
+    delKey.classList.add("key", "special");
+    delKey.textContent = "DEL";
+    delKey.setAttribute("aria-label", "Verwyder");
+    delKey.addEventListener("click", handleDelete);
+    keyboard.appendChild(delKey);
+
+    const enterKey = document.createElement("button");
+    enterKey.classList.add("key", "special");
+    enterKey.textContent = "ENTER";
+    enterKey.setAttribute("aria-label", "Voer in");
+    enterKey.addEventListener("click", handleSubmit);
+    keyboard.appendChild(enterKey);
+  }
+
+  // --- Update die sleutelbord kleure na gradeer ---
+  function updateKeyboard() {
+    const keys = keyboard.querySelectorAll(".key");
+    const gradesByLetter = {};
+    for (const guess of guesses) {
+      const grades = gradeGuess(guess, teikenWoord);
+      for (let i = 0; i < wordLength; i++) {
+        const letter = guess[i].toUpperCase();
+        const grade = grades[i];
+        if (!gradesByLetter[letter] || gradesByLetter[letter] === "absent") {
+          gradesByLetter[letter] = grade;
+        } else if (gradesByLetter[letter] === "present" && grade === "correct") {
+          gradesByLetter[letter] = "correct";
+        }
+      }
+    }
+    for (const key of keys) {
+      key.classList.remove("correct", "present", "absent");
+      const grade = gradesByLetter[key.textContent];
+      if (grade) {
+        key.classList.add(grade);
+      }
+    }
+  }
+
+  // --- Hanteer sleutelbord kliek ---
+  function handleKey(letter) {
+    if (guesses.length >= maxGuesses) return;
+    if (guessInput.value.length >= wordLength) return;
+    guessInput.value += letter.toLowerCase();
+    toggleSubmitState();
+  }
+  function handleDelete() {
+    guessInput.value = guessInput.value.slice(0, -1);
+    toggleSubmitState();
+  }
+
+  // --- Skakel submit knoppie aan/af afhangend van lengte ---
+  function toggleSubmitState() {
+    submitBtn.disabled = guessInput.value.length !== wordLength;
+  }
+
+  // --- Hanteer submit ---
+  function handleSubmit() {
+    if (guesses.length >= maxGuesses) return;
+    const guess = guessInput.value.toLowerCase();
+    if (!WORDS5.includes(guess)) {
+      showMessage("Ongeldige woord, probeer weer.");
+      return;
+    }
+    guesses.push(guess);
+    guessInput.value = "";
+    toggleSubmitState();
+    renderBoard();
+    updateKeyboard();
+    checkWinOrLose();
+    enableShareButtons(guesses.length > 0);
+    saveGameToStorage();
+  }
+
+  // --- Wys boodskap --- 
+  function showMessage(msg) {
+    message.textContent = msg;
+    setTimeout(() => {
+      if (message.textContent === msg) {
+        message.textContent = "";
+      }
+    }, 3000);
+  }
+
+  // --- Kontroleer of speler gewen of verloor ---
+  function checkWinOrLose() {
+    const lastGuess = guesses[guesses.length - 1];
+    if (lastGuess === teikenWoord) {
+      updateStats(true);
+      showMessage("Jy het gewen! 🎉");
+      guessInput.disabled = true;
+      submitBtn.disabled = true;
+      return;
+    }
+    if (guesses.length >= maxGuesses) {
+      updateStats(false);
+      showMessage(`Jy het verloor! Die woord was: ${teikenWoord.toUpperCase()}`);
+      guessInput.disabled = true;
+      submitBtn.disabled = true;
+    }
+  }
+
+  // --- Statistiek update ---
+  function updateStats(win) {
+    stats.total++;
+    if (win) {
+      stats.wins++;
+      stats.currentStreak++;
+      if (stats.currentStreak > stats.bestStreak) {
+        stats.bestStreak = stats.currentStreak;
+      }
+      stats.distribution[guesses.length] = (stats.distribution[guesses.length] || 0) + 1;
+    } else {
+      stats.currentStreak = 0;
+    }
+    stats.lastPlayDate = new Date().toLocaleDateString();
+    saveStatsToStorage();
+    updateSidebarStatsUI();
+  }
+
+  // --- Stoor en laai ---
+  function saveStatsToStorage() {
+    localStorage.setItem("wvdStats", JSON.stringify(stats));
+  }
+  function loadStatsFromStorage() {
+    const saved = localStorage.getItem("wvdStats");
+    if (saved) {
+      try {
+        stats = JSON.parse(saved);
+      } catch { }
+    }
+  }
+  function saveGameToStorage() {
+    localStorage.setItem("wvdGuesses", JSON.stringify(guesses));
+  }
+  function loadGameFromStorage() {
+    const saved = localStorage.getItem("wvdGuesses");
+    if (saved) {
+      try {
+        guesses = JSON.parse(saved);
+      } catch { }
+    }
+  }
+
+  // --- Update UI in sidebar met stats ---
+  function updateSidebarStatsUI() {
+    totalPlayedUI.textContent = stats.total;
+    winRateUI.textContent = (stats.total > 0)
+      ? Math.round(Math.min(stats.wins, stats.total) / stats.total * 100) + "%"
+      : "0%";
+    currentStreakUI.textContent = stats.currentStreak;
+    bestStreakUI.textContent = stats.bestStreak;
+    lastPlayDateUI.textContent = stats.lastPlayDate || "Nog nie";
+
+    // Wys verdeling
+    const distContainer = document.getElementById("distribution-bars");
+    distContainer.innerHTML = "";
+    const vals = Object.values(stats.distribution);
+    const maxCount = Math.max(1, ...(vals.length ? vals : [0]));
+    for (let i = 1; i <= maxGuesses; i++) {
+      const count = stats.distribution[i] || 0;
+      const widthPct = Math.max(8, (count / maxCount) * 100);
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.width = widthPct + "%";
+      bar.textContent = `${i} poging(s): ${count}`;
+      distContainer.appendChild(bar);
+    }
+  }
+
+  // --- Wys woordlys ---
+  function updateSidebarWoorde() {
+    woordLysUI.innerHTML = "";
+    for (const woord of WORDS5) {
+      const span = document.createElement("span");
+      span.textContent = woord.toUpperCase();
+      woordLysUI.appendChild(span);
+    }
+  }
+
+  // --- Deel resultate ---
+  function getResultText() {
+    let result = `Woord van die Dag 🇿🇦\nPogings: ${guesses.length}/${maxGuesses}\n\n`;
+    guesses.forEach(g => {
+      const grades = gradeGuess(g, teikenWoord);
+      let line = "";
+      for (let s of grades) {
+        line += (s === "correct") ? "🟩" : (s === "present") ? "🟨" : "⬜";
+      }
+      result += line + "\n";
+    });
+    result += `\nSpeel Woord van die Dag elke dag!`;
+    return result;
+  }
+
+  // --- Deel na klembord ---
+  function shareToClipboard() {
+    const resultText = getResultText();
+    navigator.clipboard.writeText(resultText).then(() => {
+      alert("Resultate gekopieer na jou knipbord!");
+    }).catch(() => {
+      alert("Kopiëer misluk, probeer weer.");
+    });
+  }
+
+  // --- Deel na WhatsApp ---
+  function shareToWhatsApp() {
+    const resultText = encodeURIComponent(getResultText());
+    window.open(`https://wa.me/?text=${resultText}`, "_blank");
+  }
+
+  // --- Gebeurtenisse --- 
+  submitBtn.addEventListener("click", handleSubmit);
+  guessInput.addEventListener("input", toggleSubmitState);
+  guessInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") handleSubmit();
+  });
+
+  // --- Hamburger menu --- 
   function openSidebar() {
     sidebar.classList.add("open");
     sidebar.setAttribute("aria-hidden", "false");
@@ -409,220 +744,38 @@
   });
   closeSidebarBtn.addEventListener("click", closeSidebar);
 
-  // --- Funksie om te gradeer ---
-  // Gradeer elke letter van 'guess' teen 'target' (teikenWoord)
-  // Return 'correct', 'present', of 'absent' per letter
-  function gradeGuess(guess, target) {
-    const result = new Array(guess.length).fill("absent");
-    const targetLetters = target.split("");
-    const guessLetters = guess.split("");
-    
-    // Eerste slaan: korrek op regte plek
-    for (let i = 0; i < guessLetters.length; i++) {
-      if (guessLetters[i] === targetLetters[i]) {
-        result[i] = "correct";
-        targetLetters[i] = null; // Merk as gebruik
-        guessLetters[i] = null;  // Merk as verwerk
-      }
+  // --- Deel knoppies ---
+  copyResultsBtn.addEventListener("click", shareToClipboard);
+  whatsappShareBtn.addEventListener("click", shareToWhatsApp);
+  shareBtn.addEventListener("click", shareToClipboard);
+  waShareBtn.addEventListener("click", shareToWhatsApp);
+
+  // --- Modal ---
+  practiceBtn.addEventListener("click", () => {
+    closeSidebar();
+    statsModal.classList.add("open");
+    statsModal.focus();
+    updateStatsModal();
+  });
+  statsCloseBtn.addEventListener("click", () => {
+    statsModal.classList.remove("open");
+  });
+  statsModal.addEventListener("click", e => {
+    if (e.target === statsModal) statsModal.classList.remove("open");
+  });
+  window.addEventListener("keydown", e => {
+    if (e.key === "Escape" && statsModal.classList.contains("open")) {
+      statsModal.classList.remove("open");
     }
-    // Tweede slaan: teenwoordig maar verkeerde plek
-    for (let i = 0; i < guessLetters.length; i++) {
-      if (guessLetters[i] && targetLetters.includes(guessLetters[i])) {
-        result[i] = "present";
-        const index = targetLetters.indexOf(guessLetters[i]);
-        targetLetters[index] = null;
-      }
-    }
-    return result;
-  }
+  });
 
-  // --- Bord skep ---
-  function createBoard() {
-    board.innerHTML = "";
-    for (let i = 0; i < maxGuesses * teikenWoord.length; i++) {
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      board.appendChild(tile);
-    }
-  }
-
-  // --- Bord render ---
-  function renderBoard() {
-    const tiles = board.children;
-    for (let i = 0; i < maxGuesses; i++) {
-      const guess = guesses[i] || "";
-      const grades = guess ? gradeGuess(guess, teikenWoord) : [];
-      for (let j = 0; j < teikenWoord.length; j++) {
-        const idx = i * teikenWoord.length + j;
-        const tile = tiles[idx];
-        tile.textContent = guess[j] ? guess[j].toUpperCase() : "";
-        tile.className = "tile";
-        if (grades[j]) {
-          tile.classList.add(grades[j]);
-        }
-      }
-    }
-  }
-
-  // --- Skep sleutelbord ---
-  const keys = "QWERTYUIOPASDFGHJKLZXCVBNM".split("");
-  function createKeyboard() {
-    keyboard.innerHTML = "";
-    keys.forEach(k => {
-      const keyBtn = document.createElement("button");
-      keyBtn.className = "key";
-      keyBtn.textContent = k;
-      keyBtn.setAttribute("aria-label", `Sleutel ${k}`);
-      keyBtn.addEventListener("click", () => {
-        addLetter(k);
-      });
-      keyboard.appendChild(keyBtn);
-    });
-    // Verwyder sleutel, kan later 'Enter' en 'Backspace' byvoeg
-  }
-
-  // --- Voeg letter by invoer ---
-  function addLetter(letter) {
-    if (guessInput.value.length < teikenWoord.length) {
-      guessInput.value += letter;
-      toggleSubmitState();
-    }
-  }
-
-  // --- Wissel inligting van submit-knoppie ---
-  function toggleSubmitState() {
-    submitBtn.disabled = guessInput.value.length !== teikenWoord.length;
-  }
-
-  // --- Kyk of woord geldig is (kan later verbeter) ---
-  function isValidWord(word) {
-    // Simpel voorbeeld, kan 'n woordelys gebruik
-    return word.length === teikenWoord.length && /^[a-zA-Z]+$/.test(word);
-  }
-
-  // --- Proses raaiskoot ---
-  function submitGuess() {
-    const guess = guessInput.value.toUpperCase();
-    if (!isValidWord(guess)) {
-      showMessage("Ongeldige woord, probeer weer.");
-      return;
-    }
-    if (guesses.length >= maxGuesses) {
-      showMessage("Jy het al jou pogings gebruik.");
-      return;
-    }
-    guesses.push(guess);
-    guessInput.value = "";
-    toggleSubmitState();
-    renderBoard();
-    updateKeyboard();
-    updateSidebarWoorde();
-    enableShareButtons(true);
-    saveStatsToStorage();
-
-    if (guess === teikenWoord) {
-      showMessage("Baie goed! Jy het die woord reg gekry! 🎉");
-      updateStats(true);
-    } else if (guesses.length >= maxGuesses) {
-      showMessage(`Jy het klaar gespeel! Die woord was ${teikenWoord}.`);
-      updateStats(false);
-    } else {
-      showMessage("");
-    }
-  }
-
-  // --- Vertoon boodskap ---
-  function showMessage(msg) {
-    messageEl.textContent = msg;
-  }
-
-  // --- Update sleutelbord kleure ---
-  function updateKeyboard() {
-    const letterGrades = {};
-    guesses.forEach(g => {
-      const grades = gradeGuess(g, teikenWoord);
-      for (let i = 0; i < g.length; i++) {
-        const l = g[i];
-        if (grades[i] === "correct") {
-          letterGrades[l] = "correct";
-        } else if (grades[i] === "present" && letterGrades[l] !== "correct") {
-          letterGrades[l] = "present";
-        } else if (!letterGrades[l]) {
-          letterGrades[l] = "absent";
-        }
-      }
-    });
-
-    Array.from(keyboard.children).forEach(keyBtn => {
-      const k = keyBtn.textContent;
-      keyBtn.classList.remove("correct", "present", "absent");
-      if (letterGrades[k]) {
-        keyBtn.classList.add(letterGrades[k]);
-      }
-    });
-  }
-
-  // --- Update woordlys in sidebar ---
-  function updateSidebarWoorde() {
-    woordLysEl.innerHTML = "";
-    guesses.forEach(g => {
-      const span = document.createElement("span");
-      span.textContent = g;
-      woordLysEl.appendChild(span);
-    });
-  }
-
-  // --- Statistiek opdateer ---
-  function updateStats(won) {
-    stats.total++;
-    if (won) {
-      stats.wins = (stats.wins || 0) + 1;
-      stats.currentStreak = (stats.currentStreak || 0) + 1;
-      stats.bestStreak = Math.max(stats.bestStreak || 0, stats.currentStreak);
-    } else {
-      stats.currentStreak = 0;
-    }
-    stats.lastPlayDate = new Date().toLocaleDateString();
-
-    // Update verspreiding
-    const tries = guesses.length;
-    stats.distribution[tries] = (stats.distribution[tries] || 0) + 1;
-
-    updateSidebarStatsUI();
-  }
-
-  // --- Sidebar stats UI opdateer ---
-  function updateSidebarStatsUI() {
-    document.getElementById("total-played").textContent = stats.total;
-    document.getElementById("win-rate").textContent = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) + "%" : "0%";
-    document.getElementById("current-streak").textContent = stats.currentStreak || 0;
-    document.getElementById("best-streak").textContent = stats.bestStreak || 0;
-    document.getElementById("last-play-date").textContent = stats.lastPlayDate || "Nog nie";
-
-    // Update sidebar distribution bars
-    const distEl = document.getElementById("distribution-bars");
-    distEl.innerHTML = "";
-    const vals = Object.values(stats.distribution);
-    const maxCount = Math.max(1, ...(vals.length ? vals : [0]));
-    for (let i = 1; i <= maxGuesses; i++) {
-      const count = stats.distribution[i] || 0;
-      const widthPct = Math.max(8, (count / maxCount) * 100);
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      bar.style.width = widthPct + "%";
-      bar.textContent = `${i} poging(s): ${count}`;
-      distEl.appendChild(bar);
-    }
-  }
-
-  // --- Statistiek modal update ---
   function updateStatsModal() {
     statsSummary.innerHTML = `
       <p>Gespeel: ${stats.total}</p>
       <p>Wenkoers: ${
         (stats.total > 0)
-          ? Math.round((Math.min(stats.wins || 0, stats.total || 0) / stats.total) * 100) + "%"
-          : "0%"
+        ? Math.round((Math.min(stats.wins || 0, stats.total || 0) / stats.total) * 100) + "%"
+        : "0%"
       }</p>
       <p>Huidige streek: ${stats.currentStreak}</p>
       <p>Langste streek: ${stats.bestStreak}</p>
@@ -636,84 +789,15 @@
       const count = stats.distribution[i] || 0;
       const widthPct = Math.max(8, (count / maxCount) * 100);
       const bar = document.createElement("div");
+
       bar.className = "bar";
       bar.style.width = widthPct + "%";
       bar.textContent = `${i} poging(s): ${count}`;
       distributionBarsModal.appendChild(bar);
     }
-
-    enableShareButtons(guesses.length > 0);
   }
 
-  // --- Deel resultate --- 
-  function getResultText() {
-    let result = `Woord van die Dag 🇿🇦\nPogings: ${guesses.length}/${maxGuesses}\n\n`;
-    guesses.forEach(g => {
-      const grades = gradeGuess(g, teikenWoord);
-      let line = "";
-      for (let s of grades) {
-        line += (s === "correct") ? "🟩" : (s === "present") ? "🟨" : "⬜";
-      }
-      result += line + "\n";
-    });
-    // result += `\nAntwoord: ${teikenWoord.toUpperCase()}\n`; // Opsioneel
-    result += `\nSpeel Woord van die Dag elke dag!`;
-    return result;
-  }
-
-  // --- Deel na knipbord ---
-  function shareToClipboard() {
-    const resultText = getResultText();
-    navigator.clipboard.writeText(resultText).then(() => {
-      alert("Resultate gekopieer na jou knipbord!");
-    }).catch(() => {
-      alert("Kopiëer misluk, probeer weer.");
-    });
-  }
-
-  // --- Deel na WhatsApp ---
-  function shareToWhatsApp() {
-    const resultText = encodeURIComponent(getResultText());
-    window.open(`https://wa.me/?text=${resultText}`, "_blank");
-  }
-
-  // --- Share knoppies ---
-  copyResultsBtn.addEventListener("click", shareToClipboard);
-  whatsappShareBtn.addEventListener("click", shareToWhatsApp);
-  shareBtn.addEventListener("click", shareToClipboard);
-  waShareBtn.addEventListener("click", shareToWhatsApp);
-
-  // --- Skakel deel knoppies aan/af ---
-  function enableShareButtons(enable) {
-    shareBtn.disabled = !enable;
-    waShareBtn.disabled = !enable;
-  }
-
-  // --- Statistiek modal ---
-  practiceBtn.addEventListener("click", () => {
-    closeSidebar();
-    statsModal.classList.add("open");
-    statsModal.focus();
-    updateStatsModal();
-  });
-  statsCloseBtn.addEventListener("click", () => {
-    statsModal.classList.remove("open");
-    guessInput.focus();
-  });
-  statsModal.addEventListener("click", e => {
-    if (e.target === statsModal) {
-      statsModal.classList.remove("open");
-      guessInput.focus();
-    }
-  });
-  window.addEventListener("keydown", e => {
-    if (e.key === "Escape" && statsModal.classList.contains("open")) {
-      statsModal.classList.remove("open");
-      guessInput.focus();
-    }
-  });
-
-  // --- Import / Export Statistiek ---
+  // --- Import/Export --- 
   exportBtn.addEventListener("click", () => {
     const dataStr = JSON.stringify(stats, null, 2);
     alert("Kopieer jou statistiek data:\n\n" + dataStr);
@@ -737,65 +821,7 @@
     }
   });
 
-  // --- Laai/ Stoor --- 
-  function loadStatsFromStorage() {
-    try {
-      const stored = localStorage.getItem("woordvanDagStats");
-      if (stored) {
-        stats = JSON.parse(stored);
-      }
-    } catch {}
-  }
-  function saveStatsToStorage() {
-    try {
-      localStorage.setItem("woordvanDagStats", JSON.stringify(stats));
-    } catch {}
-  }
-
-  function loadGameFromStorage() {
-    try {
-      const storedGuesses = localStorage.getItem("woordvanDagGuesses");
-      if (storedGuesses) {
-        guesses = JSON.parse(storedGuesses);
-      }
-    } catch {}
-  }
-  function saveGameToStorage() {
-    try {
-      localStorage.setItem("woordvanDagGuesses", JSON.stringify(guesses));
-    } catch {}
-  }
-
-  // --- Update sidebar woordlys en stoor ---
-  function updateSidebarWoorde() {
-    woordLysEl.innerHTML = "";
-    guesses.forEach(g => {
-      const span = document.createElement("span");
-      span.textContent = g;
-      woordLysEl.appendChild(span);
-    });
-    saveGameToStorage();
-  }
-
-  // --- Invoer blok beheer ---
-  guessInput.addEventListener("input", () => {
-    guessInput.value = guessInput.value.toUpperCase().slice(0, teikenWoord.length);
-    toggleSubmitState();
-  });
-
-  // Submit knoppie
-  submitBtn.addEventListener("click", () => {
-    submitGuess();
-  });
-
-  // ENTER sleutel in invoer
-  guessInput.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !submitBtn.disabled) {
-      submitGuess();
-    }
-  });
-
-  // --- Begin ---
+  // --- Init ---
   function init() {
     loadStatsFromStorage();
     loadGameFromStorage();
@@ -806,13 +832,18 @@
     updateSidebarStatsUI();
     updateSidebarWoorde();
     toggleSubmitState();
-    enableShareButtons(guesses.length > 0);
     guessInput.focus();
   }
   init();
+  enableShareButtons(guesses.length > 0);
+
+  // --- Skakel share knoppies aan/af ---
+  function enableShareButtons(enable) {
+    shareBtn.disabled = !enable;
+    waShareBtn.disabled = !enable;
+  }
 
 })();
 </script>
-
 </body>
 </html>
