@@ -239,6 +239,16 @@
     color: #b00020;
   }
 
+  /* Deel-knoppies onder die inset */
+  #share-row { text-align: center; margin: 8px auto 20px auto; }
+  .action-btn {
+  padding: 10px 14px; border: none; border-radius: 8px;
+  background-color: #6aaa64; color: #fff; cursor: pointer; margin: 4px 6px;
+  }
+  .action-btn:disabled { 
+  background-color: #a5d6a7; cursor: not-allowed; 
+  }
+
   /* Modal style */
   #stats-modal {
     position: fixed;
@@ -318,6 +328,11 @@
 <button id="submit-btn" aria-label="Voer raaiskoot in">Voer in</button>
 
 <div id="message" role="alert" aria-live="assertive"></div>
+<div id="share-row">
+  <button id="share-btn" class="action-btn" disabled>📋 Deel jou poging</button>
+  <button id="wa-share-btn" class="action-btn" disabled>💬 WhatsApp</button>
+</div>
+  
 
 <!-- Sleutelbord -->
 <div id="keyboard" aria-label="Virtuele sleutelbord"></div>
@@ -457,15 +472,17 @@
   }
 
   // --- Storage ---
-  function loadStatsFromStorage() {
-    const saved = localStorage.getItem("woordStats");
-    if(saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if(parsed && typeof parsed === "object") stats = parsed;
-      } catch {}
-    }
+   function loadStatsFromStorage() {
+  const saved = localStorage.getItem("woordStats");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === "object") stats = parsed;
+    } catch {}
   }
+  sanitizeStats(); // <— NUUT: sorg dat wins ≤ total en dat velde geldig is
+}
+
   function saveStatsToStorage() {
     localStorage.setItem("woordStats", JSON.stringify(stats));
   }
@@ -635,10 +652,22 @@
       updateSidebarStatsUI();
     }
   }
+function sanitizeStats() {
+  stats.total = Math.max(0, Number(stats.total) || 0);
+  stats.wins  = Math.max(0, Number(stats.wins)  || 0);
+  if (!stats.distribution || typeof stats.distribution !== "object") {
+    stats.distribution = {};
+  }
+  // Belangrik: keer dat wenkoers ooit bo 100% kan gaan
+  if (stats.wins > stats.total) stats.wins = stats.total;
+}
+
 
   function updateSidebarStatsUI() {
     totalPlayedSpan.textContent = stats.total;
-    winRateSpan.textContent = stats.total === 0 ? "0%" : Math.round((stats.wins / stats.total) * 100) + "%";
+    const winsClamped = Math.min(stats.wins || 0, stats.total || 0);
+    const winRate = stats.total > 0 ? Math.round((winsClamped / stats.total) * 100) : 0;
+    winRateSpan.textContent = winRate + "%";
     currentStreakSpan.textContent = stats.currentStreak;
     bestStreakSpan.textContent = stats.bestStreak;
     lastPlayDateSpan.textContent = stats.lastPlayDate || "Nog nie";
@@ -707,19 +736,29 @@
     return result;
   }
 
-  copyResultsBtn.addEventListener("click", () => {
-    const resultText = getResultText();
-    navigator.clipboard.writeText(resultText).then(() => {
-      alert("Resultate gekopieer na clipboard!");
-    }).catch(() => {
-      alert("Kopiëer misluk, probeer weer.");
-    });
-  });
+  // Modal
+copyResultsBtn.addEventListener("click", shareToClipboard);
+whatsappShareBtn.addEventListener("click", shareToWhatsApp);
 
-  whatsappShareBtn.addEventListener("click", () => {
-    const resultText = encodeURIComponent(getResultText());
-    window.open(`https://wa.me/?text=${resultText}`, "_blank");
+// Buite die modal
+shareBtn.addEventListener("click", shareToClipboard);
+waShareBtn.addEventListener("click", shareToWhatsApp);
+
+
+  function shareToClipboard() {
+  const resultText = getResultText();
+  navigator.clipboard.writeText(resultText).then(() => {
+    alert("Resultate gekopieer na jou knipbord!");
+  }).catch(() => {
+    alert("Kopiëer misluk, probeer weer.");
   });
+}
+
+function shareToWhatsApp() {
+  const resultText = encodeURIComponent(getResultText());
+  window.open(`https://wa.me/?text=${resultText}`, "_blank");
+}
+
 
   // --- Modal ---
   practiceBtn.addEventListener("click", () => {
@@ -744,11 +783,21 @@
   function updateStatsModal() {
     statsSummary.innerHTML = `
       <p>Gespeel: ${stats.total}</p>
-      <p>Wenkoers: ${stats.total === 0 ? "0%" : Math.round((stats.wins / stats.total) * 100) + "%"}</p>
+      <p>Wenkoers: ${
+      (stats.total > 0)
+      ? Math.round((Math.min(stats.wins || 0, stats.total || 0) / stats.total) * 100) + "%"
+      : "0%"
+      }</p>
       <p>Huidige streek: ${stats.currentStreak}</p>
       <p>Langste streek: ${stats.bestStreak}</p>
       <p>Laas gespeel: ${stats.lastPlayDate || "Nog nie"}</p>
     `;
+
+      function enableShareButtons(enable) {
+  shareBtn.disabled = !enable;
+  waShareBtn.disabled = !enable;
+}
+
 
     distributionBarsModal.innerHTML = "";
     const vals = Object.values(stats.distribution);
@@ -757,6 +806,9 @@
       const count = stats.distribution[i] || 0;
       const widthPct = Math.max(8, (count / maxCount) * 100);
       const bar = document.createElement("div");
+      const shareBtn = document.getElementById("share-btn");
+      const waShareBtn = document.getElementById("wa-share-btn");
+
       bar.className = "bar";
       bar.style.width = widthPct + "%"; // wyer in modal hang nou net van houer af
       bar.textContent = `${i} poging(s): ${count}`;
@@ -802,6 +854,8 @@
     guessInput.focus();
   }
   init();
+  enableShareButtons(guesses.length > 0);
+
 
 })();
 </script>
