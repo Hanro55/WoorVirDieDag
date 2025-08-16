@@ -144,7 +144,7 @@ body.donker .sleutel {
 
   <input id="raad-invoer" maxlength="5" placeholder="Tik 'n woord" autofocus />
 <label for="dagKeuse">Kies vorige datum:</label>
-<input type="date" id="dagKeuse" onchange="laaiOuWoord()" />
+<input type="date" id="dagKeuse" max="<?= (new Date()).toISOString().split('T')[0] ?>" onchange="laaiOuWoord()" />
 
   <br />
   <button onclick="stuurRaaiskoot()">Voer in</button>
@@ -476,16 +476,56 @@ function deelOpFacebook() {
 }
 
   function laaiOuWoord() {
-  const datum = document.getElementById("dagKeuse").value;
-  if (!datum) return;
+  const dagKeuse = document.getElementById("dagKeuse").value;
+  if (!dagKeuse) return;
+
+  const gekoseDatum = new Date(dagKeuse);
+  const vandag = new Date();
+  vandag.setHours(0,0,0,0);
+
+  if (gekoseDatum > vandag) {
+    alert("Jy kan nie 'n toekomstige datum kies nie.");
+    document.getElementById("dagKeuse").value = "";
+    return;
+  }
 
   let seed = 0;
-  for (let i = 0; i < datum.length; i++) {
-    seed += datum.charCodeAt(i);
+  for (let i = 0; i < dagKeuse.length; i++) {
+    seed += dagKeuse.charCodeAt(i);
   }
   const geskommeldeLys = shuffleArraySeeded(woordLys, seed);
-  alert("Woord vir daardie dag: " + geskommeldeLys[0].toUpperCase());
+  const ouWoord = geskommeldeLys[0];
+
+  // Stel die speletjie op met die ou woord
+  invoer.disabled = false;
+  const voerInKnoppie = document.querySelector('button[onclick="stuurRaaiskoot()"]');
+  if (voerInKnoppie) voerInKnoppie.disabled = false;
+
+  pogings = [];
+  localStorage.setItem("woordPogings", "[]");
+  reedsGespeelVandag = false;
+  boodskap.textContent = "";
+
+  werkBordOp();
+  laaiBord();
+
+  // Vervang die teikenWoord sodat dit vir die vorige datum is
+  window.teikenWoord = ouWoord;
+
+  // Verwyder die "reeds gespeel" boodskap indien dit nie vandag is nie
+  if (gekoseDatum.toDateString() !== new Date().toDateString()) {
+    reedsGespeelVandag = false;
+    invoer.disabled = false;
+    if (voerInKnoppie) voerInKnoppie.disabled = false;
+    boodskap.textContent = "";
+  }
 }
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const vandag = new Date().toISOString().split("T")[0];
+  document.getElementById("dagKeuse").setAttribute("max", vandag);
+});
+
 
 </script>
 
